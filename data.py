@@ -12,7 +12,7 @@ def flatten(listOfLists):
 #df = pd.DataFrame()
 
 files = ['S10', 'S11', 'S13', 'S14', 'S15', 'S16', 'S17', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9']
-#path = "/Users/ethanshen/Downloads/WESAD" 
+path = "/Users/ethanshen/Downloads/WESAD" 
 path = "/hpc/group/sta440-f20/WESAD/WESAD"
 def get_chest_pickle(file_list):
     chest_data = pd.DataFrame()
@@ -38,4 +38,21 @@ def get_chest_pickle(file_list):
 
 chest_metrics_df = get_chest_pickle(files)
 
-print(chest_metrics_df)
+chest_metrics_df.to_csv(('Chest_metrics.csv'), mode='a', header=True)
+
+def get_wrist_pickle(file_list):
+    wrist_data = pd.DataFrame()
+    for file in file_list:
+        file_name = "".join([path, "/", file, "/", file, ".pkl"])
+        data = pd.read_pickle(file_name)
+
+        ACC_wrist_x = data['signal']['wrist']['ACC'][:,0]
+        ACC_wrist_y = data['signal']['wrist']['ACC'][:,1]
+        ACC_wrist_z = data['signal']['wrist']['ACC'][:,2]
+        BVP_wrist = list(flatten(data['signal']['wrist']['BVP']))
+        EDA_wrist = list(flatten(data['signal']['wrist']['EDA']))
+        TEMP_wrist = list(flatten(data['signal']['wrist']['TEMP']))
+
+    return ACC_wrist_x
+
+get_wrist_pickle(files)
