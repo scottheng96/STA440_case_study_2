@@ -1,0 +1,61 @@
+---
+title: "Detecting Stress Using Wearables"
+author: "Matty Pahren, Scott Heng On, Ethan Shen"
+fontsize: 12pt
+geometry: "left=1.3cm,right=1.3cm,top=1.3cm,bottom=1.3cm"
+output: 
+  pdf_document:
+     latex_engine: xelatex
+     number_sections: true
+---
+```{r, function checking for installed packages, include=FALSE}
+# Validate that all necessary packaged have been downloaded, install otherwise or throw err package DNE
+pkgTest <- function(x)
+{
+  if (!require(x,character.only = TRUE))
+  {
+    install.packages(x,repos = "http://cran.r-project.org", dep=TRUE)
+    if(!require(x,character.only = TRUE)) stop("Package not found")
+  }
+}
+```
+
+```{r include=FALSE}
+# Installing packages 
+pkgTest("tidyverse")
+pkgTest("knitr")
+pkgTest("kableExtra")
+```
+
+```{r include=FALSE}
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+
+knitr::opts_chunk$set(echo = FALSE,
+                      message = FALSE,
+                      warning = FALSE)
+ggplot2::theme_set(new = theme_bw())
+```
+
+# Introduction 
+
+# Literature Review 
+
+# Data 
+
+# Methodology
+
+## Feature Engineering
+
+## Model Selection 
+
+# Results 
+
+## Testing MSE or something 
+
+## Model Diagnostics 
+
+# Discussion
+
+# Conclusion 
