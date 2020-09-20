@@ -12,27 +12,29 @@ def flatten(listOfLists):
 #df = pd.DataFrame()
 
 files = ['S10', 'S11', 'S13', 'S14', 'S15', 'S16', 'S17', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9']
-path = "/hpc/group/sta440-f20/WESAD/WESAD"
-output_path = "/hpc/group/sta440-f20/sdh45/output_data"
+path = "/Users/ethanshen/Downloads/WESAD"
+output_path = "/Users/ethanshen/Documents/College/Fa20/STA 440/STA440_case_study_2"
+#path = "/hpc/group/sta440-f20/WESAD/WESAD"
+#output_path = "/hpc/group/sta440-f20/sdh45/output_data"
 def get_chest_pickle(file_list):
-    chest_data = pd.DataFrame()
+    #chest_data = pd.DataFrame()
     for file in file_list:
         file_name = "".join([path, "/", file, "/", file, ".pkl"])
         data = pd.read_pickle(file_name)
         
         df = pd.DataFrame()
-        df['ACC_chest_X'] = data['signal']['chest']['ACC'][:,0]
-        df['ACC_chest_Y'] = data['signal']['chest']['ACC'][:,1]
-        df['ACC_chest_Z'] = data['signal']['chest']['ACC'][:,2]
-        df['EMG'] = list(flatten(data['signal']['chest']['EMG']))
-        df['ECG'] = list(flatten(data['signal']['chest']['ECG']))
-        df['EDA'] = list(flatten(data['signal']['chest']['EDA']))
-        df['Temp'] = list(flatten(data['signal']['chest']['Temp']))
-        df['Resp'] = list(flatten(data['signal']['chest']['Resp']))
-        df['Label'] = data['label']
+        df['ACC_chest_X'] = data['signal']['chest']['ACC'][:,0][::175]
+        df['ACC_chest_Y'] = data['signal']['chest']['ACC'][:,1][::175]
+        df['ACC_chest_Z'] = data['signal']['chest']['ACC'][:,2][::175]
+        df['EMG'] = list(flatten(data['signal']['chest']['EMG'][::175]))
+        df['ECG'] = list(flatten(data['signal']['chest']['ECG'][::175]))
+        df['EDA'] = list(flatten(data['signal']['chest']['EDA'][::175]))
+        df['Temp'] = list(flatten(data['signal']['chest']['Temp'][::175]))
+        df['Resp'] = list(flatten(data['signal']['chest']['Resp'][::175]))
+        df['Label'] = data['label'][::175]
         df['Participant'] = file
-        output_path = "".join([output_path,'/',file,'_chest','.csv'])
-        df.to_csv(output_path)
+        csv_file = "".join([output_path,'/',file,'_chest','.csv'])
+        df.to_csv(csv_file)
         
 
 get_chest_pickle(files)
@@ -41,7 +43,7 @@ get_chest_pickle(files)
 # chest_metrics_df.to_csv(('Chest_metrics.csv'), mode='a', header=True)
 
 def get_wrist_pickle(file_list):
-    wrist_data = pd.DataFrame()
+    #wrist_data = pd.DataFrame()
     for file in file_list:
         file_name = "".join([path, "/", file, "/", file, ".pkl"])
         data = pd.read_pickle(file_name)
@@ -55,7 +57,9 @@ def get_wrist_pickle(file_list):
         df['BVP_wrist'] = list(flatten(data['signal']['wrist']['BVP'][::16]))
         df['EDA_wrist'] = list(flatten(data['signal']['wrist']['EDA']))
         df['TEMP_wrist'] = list(flatten(data['signal']['wrist']['TEMP']))
-        output_path = "".join([output_path,'/',file,'_wrist','.csv'])
-        df.to_csv(output_path)
+        df['Label'] = data['label'][::175]
+        df['Participant'] = file
+        csv_file = "".join([output_path,'/',file,'_wrist','.csv'])
+        df.to_csv(csv_file)
 
 get_wrist_pickle(files)
