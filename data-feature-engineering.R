@@ -17,10 +17,23 @@ Temp_wrist_list = list()
 inhale_list = list()
 exhale_list = list()
 resp_list = list()
+breath_list = list()
 
 for (i in 1:(chest_wrist$Participant %>% unique() %>% length())) {
   p <- chest_wrist$Participant %>% unique() %>% .[i]
   subject_p <- chest_wrist %>% filter(Participant == p)
+  
+  subject_p$cycle <- cumsum(c(-1,diff(sign(subject_p$Resp))) > 0)
+  subject_p <- subject_p %>%
+    mutate(resp_cycle = case_when(is.na(cycle) ~ 0.0,
+                                  TRUE ~ as.numeric(cycle)))
+  cycle_int = subject_p %>%
+    group_by(resp_cycle) %>%
+    count()
+  
+  subject_p <- full_join(subject_p, cycle_int)
+  subject_p <- subject_p %>%
+    mutate(breath_rate = n/4)
   
   label <- rollapply(subject_p$Label, 240, first)
   # chest EDA
@@ -141,6 +154,23 @@ for (i in 1:(chest_wrist$Participant %>% unique() %>% length())) {
     range_resp = max_resp - min_resp
   )
   
+  # breath rate
+  mean_breath <- rollapply(subject_p$breath_rate, 240, mean, na.rm = TRUE)
+  sd_breath <- rollapply(subject_p$breath_rate, 240, sd, na.rm = TRUE)
+  max_breath <- rollapply(subject_p$breath_rate, 240, max, na.rm = TRUE)
+  min_breath <- rollapply(subject_p$breath_rate, 240, min, na.rm = TRUE)
+  
+  breath_df <- tibble(
+    participant = p,
+    label = label,
+    
+    mean_breath = mean_breath, 
+    sd_breath = sd_breath,
+    min_breath = min_breath,
+    max_breath = max_breath,
+    range_breath = max_breath - min_breath
+  )
+  
   # adding dataframes to list
   EDA_chest_list[[i]] <- EDA_chest_df
   EDA_wrist_list[[i]] <- EDA_wrist_df
@@ -150,6 +180,7 @@ for (i in 1:(chest_wrist$Participant %>% unique() %>% length())) {
   inhale_list[[i]] <- inhale_df
   exhale_list[[i]] <- exhale_df
   resp_list[[i]] <- resp_df
+  breath_list[[i]] <- breath_df
 }
 
 # bind rows for all dataframes (each dataframe is a subject)
@@ -161,6 +192,7 @@ Temp_wrist_eng <- do.call(bind_rows, Temp_wrist_list)
 inhale_eng <- do.call(bind_rows, inhale_list)
 exhale_eng <- do.call(bind_rows, exhale_list)
 resp_eng <- do.call(bind_rows, resp_list)
+breath_eng <- do.call(bind_rows, breath_list)
 
 # add all of our engineered values/dataframes into here 
 final_data <- bind_cols(EDA_chest_eng, 
@@ -170,7 +202,10 @@ final_data <- bind_cols(EDA_chest_eng,
                         Temp_wrist_eng %>% select(-participant, -label),
                         inhale_eng %>% select(-participant, -label),
                         exhale_eng %>% select(-participant, -label),
-                        resp_eng %>% select(-participant, -label))
+                        resp_eng %>% select(-participant, -label),
+                        breath_eng %>% select(-participant, -label))
 
+final_data <- final_data %>%
+  mutate(i_e_ratio = abs(mean_inhale/mean_exhale))
 #saveRDS(final_data, file = "final_data.Rds")
  
