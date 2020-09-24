@@ -7,7 +7,10 @@ chest_wrist <- chest_wrist %>%
   mutate(inhale = case_when(Resp > 0 ~ Resp,
                             TRUE ~ NA_real_),
          exhale = case_when(Resp < 0 ~ Resp,
-                            TRUE ~ NA_real_))
+                            TRUE ~ NA_real_),
+         ACC_chest_mag = sqrt(ACC_chest_X*2 + ACC_chest_Y*2 + ACC_chest_Z*2),
+         ACC_wrist_mag = sqrt(ACC_wrist_X*2 + ACC_wrist_Y*2 + ACC_wrist_Z*2)
+         )
 
 EDA_chest_list = list()
 EDA_wrist_list = list()
@@ -105,6 +108,10 @@ for (i in 1:(chest_wrist$Participant %>% unique() %>% length())) {
   peak_chest_ACC_Y <- rollapply(subject_p$ACC_chest_Y, 20, max)
   peak_chest_ACC_Z <- rollapply(subject_p$ACC_chest_Z, 20, max)
   
+  # chest ACC magnitude
+  mean_ACC_chest_mag <- rollapply(subject_p$ACC_chest_mag, 20, mean)
+  sd_ACC_chest_mag <- rollapply(subject_p$ACC_chest_mag, 20, sd)
+  
   ACC_chest_df <- tibble(
     participant = p,
     label = label,
@@ -118,7 +125,9 @@ for (i in 1:(chest_wrist$Participant %>% unique() %>% length())) {
     sd_chest_ACC_sum = sd_chest_ACC_sum,
     peak_chest_ACC_X = peak_chest_ACC_X,
     peak_chest_ACC_Y = peak_chest_ACC_Y,
-    peak_chest_ACC_Z = peak_chest_ACC_Z
+    peak_chest_ACC_Z = peak_chest_ACC_Z,
+    mean_ACC_chest_mag = mean_ACC_chest_mag,
+    sd_ACC_chest_mag = sd_ACC_chest_mag
   )
   
   # wrist ACC
@@ -136,6 +145,10 @@ for (i in 1:(chest_wrist$Participant %>% unique() %>% length())) {
   peak_wrist_ACC_Y <- rollapply(subject_p$ACC_wrist_Y, 20, max)
   peak_wrist_ACC_Z <- rollapply(subject_p$ACC_wrist_Z, 20, max)
   
+  # wrist ACC magnitude
+  mean_ACC_wrist_mag <- rollapply(subject_p$ACC_wrist_mag, 20, mean)
+  sd_ACC_wrist_mag <- rollapply(subject_p$ACC_wrist_mag, 20, sd)
+  
   ACC_wrist_df <- tibble(
     participant = p,
     label = label,
@@ -149,7 +162,9 @@ for (i in 1:(chest_wrist$Participant %>% unique() %>% length())) {
     sd_wrist_ACC_sum = sd_wrist_ACC_sum,
     peak_wrist_ACC_X = peak_wrist_ACC_X,
     peak_wrist_ACC_Y = peak_wrist_ACC_Y,
-    peak_wrist_ACC_Z = peak_wrist_ACC_Z
+    peak_wrist_ACC_Z = peak_wrist_ACC_Z,
+    mean_ACC_wrist_mag = mean_ACC_wrist_mag,
+    sd_ACC_wrist_mag = sd_ACC_wrist_mag
   )  
   
   # wrist BVP
@@ -310,5 +325,5 @@ final_data <- bind_cols(EDA_chest_eng,
 
 final_data <- final_data %>%
   mutate(i_e_ratio = abs(mean_inhale/mean_exhale))
-#saveRDS(final_data, file = "final_data.Rds")
+saveRDS(final_data, file = "final_data.Rds")
  
