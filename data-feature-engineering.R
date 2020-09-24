@@ -8,8 +8,8 @@ chest_wrist <- chest_wrist %>%
                             TRUE ~ NA_real_),
          exhale = case_when(Resp < 0 ~ Resp,
                             TRUE ~ NA_real_),
-         ACC_chest_mag = sqrt(ACC_chest_X*2 + ACC_chest_Y*2 + ACC_chest_Z*2),
-         ACC_wrist_mag = sqrt(ACC_wrist_X*2 + ACC_wrist_Y*2 + ACC_wrist_Z*2)
+         ACC_chest_mag = sqrt(ACC_chest_X**2 + ACC_chest_Y**2 + ACC_chest_Z**2),
+         ACC_wrist_mag = sqrt(ACC_wrist_X**2 + ACC_wrist_Y**2 + ACC_wrist_Z**2)
          )
 
 EDA_chest_list = list()
@@ -25,7 +25,6 @@ ACC_chest_list = list()
 ACC_wrist_list = list()
 BVP_wrist_list = list()
 ECG_chest_list = list()
-
 
 for (i in 1:(chest_wrist$Participant %>% unique() %>% length())) {
   p <- chest_wrist$Participant %>% unique() %>% .[i]
@@ -92,80 +91,6 @@ for (i in 1:(chest_wrist$Participant %>% unique() %>% length())) {
     sd_EMG = sd_EMG,
     range_EMG = max_EMG - min_EMG
   )
-  
-  # chest ACC
-  mean_chest_ACC_X <- rollapply(subject_p$ACC_chest_X, 20, mean)
-  mean_chest_ACC_Y <- rollapply(subject_p$ACC_chest_Y, 20, mean)
-  mean_chest_ACC_Z <- rollapply(subject_p$ACC_chest_Z, 20, mean)
-  mean_chest_ACC_sum <-  mean_chest_ACC_X + mean_chest_ACC_Y + mean_chest_ACC_Z
-  
-  sd_chest_ACC_X <- rollapply(subject_p$ACC_chest_X, 20, sd)
-  sd_chest_ACC_Y <- rollapply(subject_p$ACC_chest_Y, 20, sd)
-  sd_chest_ACC_Z <- rollapply(subject_p$ACC_chest_Z, 20, sd)
-  sd_chest_ACC_sum <- sd_chest_ACC_X + sd_chest_ACC_Y + sd_chest_ACC_Z
-  
-  peak_chest_ACC_X <- rollapply(subject_p$ACC_chest_X, 20, max)
-  peak_chest_ACC_Y <- rollapply(subject_p$ACC_chest_Y, 20, max)
-  peak_chest_ACC_Z <- rollapply(subject_p$ACC_chest_Z, 20, max)
-  
-  # chest ACC magnitude
-  mean_ACC_chest_mag <- rollapply(subject_p$ACC_chest_mag, 20, mean)
-  sd_ACC_chest_mag <- rollapply(subject_p$ACC_chest_mag, 20, sd)
-  
-  ACC_chest_df <- tibble(
-    participant = p,
-    label = label,
-    mean_chest_ACC_X = mean_chest_ACC_X,
-    mean_chest_ACC_Y = mean_chest_ACC_Y,
-    mean_chest_ACC_Z = mean_chest_ACC_Z,
-    mean_chest_ACC_sum = mean_chest_ACC_sum,
-    sd_chest_ACC_X = sd_chest_ACC_X,
-    sd_chest_ACC_Y = sd_chest_ACC_Y,
-    sd_chest_ACC_Z = sd_chest_ACC_Z,
-    sd_chest_ACC_sum = sd_chest_ACC_sum,
-    peak_chest_ACC_X = peak_chest_ACC_X,
-    peak_chest_ACC_Y = peak_chest_ACC_Y,
-    peak_chest_ACC_Z = peak_chest_ACC_Z,
-    mean_ACC_chest_mag = mean_ACC_chest_mag,
-    sd_ACC_chest_mag = sd_ACC_chest_mag
-  )
-  
-  # wrist ACC
-  mean_wrist_ACC_X <- rollapply(subject_p$ACC_wrist_X, 20, mean)
-  mean_wrist_ACC_Y <- rollapply(subject_p$ACC_wrist_Y, 20, mean)
-  mean_wrist_ACC_Z <- rollapply(subject_p$ACC_wrist_Z, 20, mean)
-  mean_wrist_ACC_sum <-  mean_wrist_ACC_X + mean_wrist_ACC_Y + mean_wrist_ACC_Z
-  
-  sd_wrist_ACC_X <- rollapply(subject_p$ACC_wrist_X, 20, sd)
-  sd_wrist_ACC_Y <- rollapply(subject_p$ACC_wrist_Y, 20, sd)
-  sd_wrist_ACC_Z <- rollapply(subject_p$ACC_wrist_Z, 20, sd)
-  sd_wrist_ACC_sum <- sd_wrist_ACC_X + sd_wrist_ACC_Y + sd_wrist_ACC_Z
-  
-  peak_wrist_ACC_X <- rollapply(subject_p$ACC_wrist_X, 20, max)
-  peak_wrist_ACC_Y <- rollapply(subject_p$ACC_wrist_Y, 20, max)
-  peak_wrist_ACC_Z <- rollapply(subject_p$ACC_wrist_Z, 20, max)
-  
-  # wrist ACC magnitude
-  mean_ACC_wrist_mag <- rollapply(subject_p$ACC_wrist_mag, 20, mean)
-  sd_ACC_wrist_mag <- rollapply(subject_p$ACC_wrist_mag, 20, sd)
-  
-  ACC_wrist_df <- tibble(
-    participant = p,
-    label = label,
-    mean_wrist_ACC_X = mean_wrist_ACC_X,
-    mean_wrist_ACC_Y = mean_wrist_ACC_Y,
-    mean_wrist_ACC_Z = mean_wrist_ACC_Z,
-    mean_wrist_ACC_sum = mean_wrist_ACC_sum,
-    sd_wrist_ACC_X = sd_wrist_ACC_X,
-    sd_wrist_ACC_Y = sd_wrist_ACC_Y,
-    sd_wrist_ACC_Z = sd_wrist_ACC_Z,
-    sd_wrist_ACC_sum = sd_wrist_ACC_sum,
-    peak_wrist_ACC_X = peak_wrist_ACC_X,
-    peak_wrist_ACC_Y = peak_wrist_ACC_Y,
-    peak_wrist_ACC_Z = peak_wrist_ACC_Z,
-    mean_ACC_wrist_mag = mean_ACC_wrist_mag,
-    sd_ACC_wrist_mag = sd_ACC_wrist_mag
-  )  
   
   # wrist BVP
   mean_wrist_BVP <- rollapply(subject_p$BVP_wrist, 240, mean)
@@ -287,11 +212,92 @@ for (i in 1:(chest_wrist$Participant %>% unique() %>% length())) {
   exhale_list[[i]] <- exhale_df
   resp_list[[i]] <- resp_df
   breath_list[[i]] <- breath_df
-  ACC_chest_list[[i]] <- ACC_chest_df
-  ACC_wrist_list[[i]] <- ACC_wrist_df
   BVP_wrist_list[[i]] <- BVP_wrist_df
   ECG_chest_list[[i]] <- ECG_chest_df
 }
+
+for (i in 1:(chest_wrist$Participant %>% unique() %>% length())) {
+  p <- chest_wrist$Participant %>% unique() %>% .[i]
+  subject_p <- chest_wrist %>% filter(Participant == p)
+  
+  # chest ACC
+  mean_chest_ACC_X <- rollapply(subject_p$ACC_chest_X, 20, mean)
+  mean_chest_ACC_Y <- rollapply(subject_p$ACC_chest_Y, 20, mean)
+  mean_chest_ACC_Z <- rollapply(subject_p$ACC_chest_Z, 20, mean)
+  mean_chest_ACC_sum <-  mean_chest_ACC_X + mean_chest_ACC_Y + mean_chest_ACC_Z
+  
+  sd_chest_ACC_X <- rollapply(subject_p$ACC_chest_X, 20, sd)
+  sd_chest_ACC_Y <- rollapply(subject_p$ACC_chest_Y, 20, sd)
+  sd_chest_ACC_Z <- rollapply(subject_p$ACC_chest_Z, 20, sd)
+  sd_chest_ACC_sum <- sd_chest_ACC_X + sd_chest_ACC_Y + sd_chest_ACC_Z
+  
+  peak_chest_ACC_X <- rollapply(subject_p$ACC_chest_X, 20, max)
+  peak_chest_ACC_Y <- rollapply(subject_p$ACC_chest_Y, 20, max)
+  peak_chest_ACC_Z <- rollapply(subject_p$ACC_chest_Z, 20, max)
+  
+  # chest ACC magnitude
+  mean_ACC_chest_mag <- rollapply(subject_p$ACC_chest_mag, 20, mean)
+  sd_ACC_chest_mag <- rollapply(subject_p$ACC_chest_mag, 20, sd)
+  
+  ACC_chest_df <- tibble(
+    participant = p,
+    label = label,
+    mean_chest_ACC_X = mean_chest_ACC_X,
+    mean_chest_ACC_Y = mean_chest_ACC_Y,
+    mean_chest_ACC_Z = mean_chest_ACC_Z,
+    mean_chest_ACC_sum = mean_chest_ACC_sum,
+    sd_chest_ACC_X = sd_chest_ACC_X,
+    sd_chest_ACC_Y = sd_chest_ACC_Y,
+    sd_chest_ACC_Z = sd_chest_ACC_Z,
+    sd_chest_ACC_sum = sd_chest_ACC_sum,
+    peak_chest_ACC_X = peak_chest_ACC_X,
+    peak_chest_ACC_Y = peak_chest_ACC_Y,
+    peak_chest_ACC_Z = peak_chest_ACC_Z,
+    mean_ACC_chest_mag = mean_ACC_chest_mag,
+    sd_ACC_chest_mag = sd_ACC_chest_mag
+  )
+  
+  # wrist ACC
+  mean_wrist_ACC_X <- rollapply(subject_p$ACC_wrist_X, 20, mean)
+  mean_wrist_ACC_Y <- rollapply(subject_p$ACC_wrist_Y, 20, mean)
+  mean_wrist_ACC_Z <- rollapply(subject_p$ACC_wrist_Z, 20, mean)
+  mean_wrist_ACC_sum <-  mean_wrist_ACC_X + mean_wrist_ACC_Y + mean_wrist_ACC_Z
+  
+  sd_wrist_ACC_X <- rollapply(subject_p$ACC_wrist_X, 20, sd)
+  sd_wrist_ACC_Y <- rollapply(subject_p$ACC_wrist_Y, 20, sd)
+  sd_wrist_ACC_Z <- rollapply(subject_p$ACC_wrist_Z, 20, sd)
+  sd_wrist_ACC_sum <- sd_wrist_ACC_X + sd_wrist_ACC_Y + sd_wrist_ACC_Z
+  
+  peak_wrist_ACC_X <- rollapply(subject_p$ACC_wrist_X, 20, max)
+  peak_wrist_ACC_Y <- rollapply(subject_p$ACC_wrist_Y, 20, max)
+  peak_wrist_ACC_Z <- rollapply(subject_p$ACC_wrist_Z, 20, max)
+  
+  # wrist ACC magnitude
+  mean_ACC_wrist_mag <- rollapply(subject_p$ACC_wrist_mag, 20, mean)
+  sd_ACC_wrist_mag <- rollapply(subject_p$ACC_wrist_mag, 20, sd)
+  
+  ACC_wrist_df <- tibble(
+    participant = p,
+    label = label,
+    mean_wrist_ACC_X = mean_wrist_ACC_X,
+    mean_wrist_ACC_Y = mean_wrist_ACC_Y,
+    mean_wrist_ACC_Z = mean_wrist_ACC_Z,
+    mean_wrist_ACC_sum = mean_wrist_ACC_sum,
+    sd_wrist_ACC_X = sd_wrist_ACC_X,
+    sd_wrist_ACC_Y = sd_wrist_ACC_Y,
+    sd_wrist_ACC_Z = sd_wrist_ACC_Z,
+    sd_wrist_ACC_sum = sd_wrist_ACC_sum,
+    peak_wrist_ACC_X = peak_wrist_ACC_X,
+    peak_wrist_ACC_Y = peak_wrist_ACC_Y,
+    peak_wrist_ACC_Z = peak_wrist_ACC_Z,
+    mean_ACC_wrist_mag = mean_ACC_wrist_mag,
+    sd_ACC_wrist_mag = sd_ACC_wrist_mag
+  )
+  
+  ACC_chest_list[[i]] <- ACC_chest_df
+  ACC_wrist_list[[i]] <- ACC_wrist_df
+}
+
 
 # bind rows for all dataframes (each dataframe is a subject)
 EDA_chest_eng <- do.call(bind_rows, EDA_chest_list)
@@ -303,10 +309,11 @@ inhale_eng <- do.call(bind_rows, inhale_list)
 exhale_eng <- do.call(bind_rows, exhale_list)
 resp_eng <- do.call(bind_rows, resp_list)
 breath_eng <- do.call(bind_rows, breath_list)
-ACC_chest_eng <- do.call(bind_rows, ACC_chest_list)
-ACC_wrist_eng <- do.call(bind_rows, ACC_chest_wrist)
 BVP_wrist_eng <- do.call(bind_rows, BVP_wrist_list)
 ECG_chest_eng <- do.call(bind_rows, ECG_chest_list)
+
+ACC_chest_eng <- do.call(bind_rows, ACC_chest_list)
+ACC_wrist_eng <- do.call(bind_rows, ACC_wrist_list)
 
 # add all of our engineered values/dataframes into here 
 final_data <- bind_cols(EDA_chest_eng, 
