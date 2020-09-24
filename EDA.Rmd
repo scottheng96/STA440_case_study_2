@@ -1,0 +1,60 @@
+---
+title: "EDA"
+author: "Matty Pahren"
+date: "9/24/2020"
+output: pdf_document
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+data <- readRDS("final_data.Rds")
+raw_data <- readRDS("chest_and_wrist.Rds")
+```
+
+
+
+```{r temp-plots-raw}
+ggplot(raw_data, aes(x = X1, y = Temp, color = Participant)) + geom_point()
+ggplot(raw_data, aes(x = X1, y = TEMP_wrist, color = Participant)) + geom_point()
+
+ggplot(raw_data, aes(x = Temp)) + facet_wrap(~Participant) + geom_histogram()
+ggplot(raw_data, aes(x = TEMP_wrist)) + facet_wrap(~Participant) + geom_histogram()
+```
+
+```{r temp-plots-transformed}
+ggplot(data, aes(mean_Temp_chest)) + geom_histogram()
+ggplot(data, aes(mean_Temp_wrist)) + geom_histogram()
+
+ggplot(data, aes(sd_Temp_chest)) + geom_histogram()
+ggplot(data, aes(sd_Temp_wrist)) + geom_histogram()
+
+ggplot(data, aes(range_Temp_chest)) + geom_histogram()
+ggplot(data, aes(range_Temp_wrist)) + geom_histogram()
+```
+
+
+```{r resp-plots-raw}
+ggplot(raw_data, aes(x = X1, y = Resp, color = Participant)) + geom_point()
+ggplot(raw_data, aes(x = Resp)) + facet_wrap(~Participant) + geom_histogram()
+```
+
+
+```{r resp-plots-transformed}
+ggplot(data, aes(mean_inhale)) + geom_histogram()
+ggplot(data, aes(mean_exhale)) + geom_histogram()
+
+ggplot(data, aes(sd_inhale)) + geom_histogram()
+ggplot(data, aes(sd_exhale)) + geom_histogram()
+
+ggplot(data, aes(range_resp)) + geom_histogram()
+
+ggplot(data, aes(mean_breath)) + geom_histogram()
+ggplot(data, aes(sd_breath)) + geom_histogram()
+ggplot(data, aes(range_breath)) + geom_histogram()
+
+ggplot(data, aes(i_e_ratio)) + geom_histogram()
+```
+
