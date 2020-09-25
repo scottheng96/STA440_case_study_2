@@ -7,6 +7,7 @@ output: pdf_document
 
 ```{r}
 library(tidyverse)
+
 ```
 
 ```{r}
@@ -57,4 +58,61 @@ ggplot(data, aes(range_breath)) + facet_wrap(~participant) + geom_histogram()
 
 ggplot(data, aes(i_e_ratio)) + facet_wrap(~participant) + geom_histogram()
 ```
+
+```{r transformed-EMG-EDA}
+# EMG
+raw_data %>% 
+  mutate(row = row_number()) %>% 
+  ggplot(aes(x = row, y = EMG, color = as.factor(Label))) + 
+  geom_line() + 
+  facet_wrap(Participant~. ,  scales = "free")
+
+
+# chest EDA
+raw_data %>% 
+  mutate(row = row_number()) %>% 
+  ggplot(aes(x = row, y = EDA, color = as.factor(Label))) + 
+  geom_line() + 
+  facet_wrap(Participant~. ,  scales = "free")
+
+# wrist EDA
+raw_data %>% 
+  mutate(row = row_number()) %>% 
+  ggplot(aes(x = row, y = EDA_wrist, color = as.factor(Label))) + 
+  geom_line() + 
+  facet_wrap(Participant~. ,  scales = "free")
+```
+
+```{r}
+library(psych)
+EDA_wrist_eng_df <- data %>% 
+  select(participant, label, mean_EDA_wrist:range_EDA_wrist) 
+
+EDA_chest_eng_df <- data %>% 
+  select(participant, label, mean_EDA:range_EDA) 
+
+EMG_chest_eng_df <- data %>% 
+  select(participant, label, mean_EMG:range_EMG) 
+
+pairs.panels(EDA_wrist_eng_df[,-c(1,2)], 
+             method = "pearson", # correlation method
+             hist.col = "#00AFBB",
+             density = TRUE,  # show density plots
+             
+)
+pairs.panels(EDA_chest_eng_df[,-c(1,2)], 
+             method = "pearson", # correlation method
+             hist.col = "#00AFBB",
+             density = TRUE,  # show density plots
+             
+)
+pairs.panels(EMG_chest_eng_df[,-c(1,2)], 
+             method = "pearson", # correlation method
+             hist.col = "#00AFBB",
+             density = TRUE,  # show density plots
+             
+)
+```
+
+
 
