@@ -45,13 +45,15 @@ final_data <- readRDS("final_data.Rds")
 sub_data <- readRDS("subj_df.Rds")
 
 survey <- survey %>%
-  mutate(label = Label)
+  rename(label = Label) %>% 
+  mutate(label = as.factor(label))
 
 sub_data <- sub_data %>%
-  mutate(participant = Participant)
+  rename(participant = Participant)
 
-all_data <- inner_join(final_data, survey)
-all_data <- inner_join(all_data, sub_data)
+all_data <- final_data %>% 
+  left_join(survey, by=c("participant", "label")) %>% 
+  left_join(sub_data, by=c("participant"))
 
 ```
 
