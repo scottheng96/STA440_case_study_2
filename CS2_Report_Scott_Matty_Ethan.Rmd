@@ -73,6 +73,51 @@ lr_model1 <- train(label ~ .,
                method="glm", family="binomial") # simple LR
 ```
 
+```{r metrics}
+calc_metrics = function(model) {
+  list = list()
+  acc_list = c()
+  f1_list = c()
+  AUC_list = c()
+  
+  for (i in 1:10) {
+    fold <- model$pred %>% pull(Resample) %>% unique() %>% .[i]
+    
+    fold_df <- model$pred %>% 
+      filter(Resample == fold)
+    
+    # accuracy
+    acc <- mean(fold_df$pred == fold_df$obs)
+    acc_list[i] <- acc
+    
+    # F1 score
+    precision <- posPredValue(fold_df$pred, fold_df$obs, positive="1")
+    recall <- sensitivity(fold_df$pred, fold_df$obs, positive="1")
+    F1 <- (2 * precision * recall) / (precision + recall)
+    f1_list[i] <- F1
+    
+    # AUC
+    AUC_list[i] <- cvAUC::AUC(fold_df$pred %>% as.double(), fold_df$obs %>% as.double())
+  }
+  
+  acc_mean = acc_list %>% mean(na.rm=T) %>% round_perc()
+  acc_sd = acc_list %>% sd(na.rm=T) %>% round_perc()
+  f1_mean = f1_list %>% mean(na.rm=T) %>% round_perc()
+  f1_sd = f1_list %>% sd(na.rm=T) %>% round_perc()
+  AUC_mean = AUC_list %>% mean(na.rm=T) %>% round_perc()
+  AUC_sd = AUC_list %>% sd(na.rm=T) %>% round_perc()
+  
+  d <- tibble(
+    Accuracy = paste(acc_mean, "±", acc_sd),
+    F1 = paste(f1_mean, "±", f1_sd),
+    AUC = paste(AUC_mean, "±", AUC_sd)
+  )
+  return(d)
+}
+# returns accuracy/F1score/AUC if you run the model using the previous  code
+```
+
+
 
 
 # Introduction 
