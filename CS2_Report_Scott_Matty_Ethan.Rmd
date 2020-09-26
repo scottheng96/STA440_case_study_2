@@ -60,13 +60,28 @@ all_data <- final_data %>%
 
 # Introduction 
 
+Affect recognition seeks to detect a person’s affective state. One of these states is stress, and long-term stress is known to have severe implications on human health and well-being. This study uses the Wearable Stress and Affect Detection (WESAD) dataset, which was introduced in Schmidt et al. [[1]][Bibliography], and ___ (main results of the modeling or something). 
+
+In conducting this analysis, we aim to determine whether sensor data are useful in predicting stress, and if so, which predictors are most significant when discriminating between stress and amusement. Furthermore, we seek to understand which types of sensor data are most useful in predicting stress, alone or in combination, and to determine if stress can be detected only using the wrist-worn wearable, which is more convenient to wear than a chest-worn device. Finally, we quantify the heterogeneity across individuals in their responses to stress by _____. 
+
 # Literature Review 
 
 # Data 
 
+The WESAD dataset contains physiological and motion data on 15 test subjects. For this analysis, we used the raw data included in the provided pickle files, which synchronised the high resolution data from the chest-worn wearables and the lower resolution data from the wrist-worn wearables. The chest data, which were all recorded at 700 Hz, includes electrocardiography (ECG) data in mV, electrodermal activity (EDA) in microseconds, electromyography (EMG) data in mV, skin temperature (TEMP) in °C, displacement of the thorax for males and the abdomen for females induced by inhaling or exhaling (RESP) as a percentage, and 3-axis accelerometer (ACC) data in g - the acceleration of gravity. The wrist data includes blood volume pulse (BVP) data, ACC data in 1/64g, EDA in microseconds, and TEMP in °C; BVP was sampled at 64 Hz, ACC was sampled at 32 Hz, and EDA and TEMP were sampled at 4 Hz. 
+
+Each sample also contains a label from 0-7 corresponding to the study protocol condition, where 2 refers to stress, and 3 refers to amusement. 1 is the baseline and 4 refers to meditation, but since we are mainly interested in discriminating between stress and amusement, we excluded these categories from our analysis. Samples labeled as 0, 5, 6, 7 should be ignored, and were also excluded from our analysis. 
+
+The dataset also included information about each of the subject’s personal characteristics, such as their height and weight, as well as their responses to questionnaires, such as PANAS [[2]][Bibliography].
+
 # Methodology
 
 ## Feature Engineering
+
+The brain takes .9 milliseconds to shift a body into a full stress response, which suggests that these data should be sampled at approximately 1111 Hz to properly identify a state of stress. However, the highest-resolution data is sampled at 700 Hz, which suggests that these data are not granular enough to fully capture a shift to stress. Thus, with computational cost in mind, we downsampled our data to 4Hz. We assigned a unique ID to each of the 15 subjects, and also added their personal characteristics. Since we are primarily interested in differentiating between stress and amusement, we only kept samples that were labeled 2 (stress) or 3 (amusement). We then relabeled amusement as 0 and stress as 1.
+
+Next, we calculated features for the different modalities, which are displayed in Table #.  Segmentation of the physiological signals was done using a sliding window, with a window shift of 0.25 seconds. The ACC features were calculated with a 5 second window size [[3]][Bibliography] and the physiological features were calculated using a 60 second window size [[4]][Bibliography]. 
+
 
 ## Model Selection 
 
@@ -79,3 +94,15 @@ all_data <- final_data %>%
 # Discussion
 
 # Conclusion 
+
+# Appendix 
+
+## Bibliography
+
+1. P. Schmidt et al. (2018). Introducing WESAD, a Multimodal Dataset for Wearable Stress and Affect Detection. Proceedings of the 2018 on International Conference on Multimodal Interaction - ICMI 18.
+
+2. D. Watson, L. A. Clark and A. Tellegen. (1988). Development and validation of brief measures of positive and negative affect: the PANAS scales. Journal of Personality and Social Psychology, 54, 6, 1063.
+
+3. M. Arif and A. Kattan. (2015). Physical Activities Monitoring Using Wearable Acceleration Sensors Attached to the Body. PLoS ONE 10, 7.
+
+4. S. Kreibig. (2010). Autonomic nervous system activity in emotion: A review. Biological Psychology 84, 3,  394–421.
