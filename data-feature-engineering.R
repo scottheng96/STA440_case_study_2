@@ -1,5 +1,6 @@
 library(tidyverse)
 library(zoo)
+library(peakPick)
 
 chest_wrist <- readRDS("chest_and_wrist.Rds")
 
@@ -26,6 +27,26 @@ ACC_wrist_list = list()
 BVP_wrist_list = list()
 ECG_chest_list = list()
 
+#calculate heart rate variability 
+hrv_mean <- function(x) {
+  index = which(x==1)
+  d = diff(index)
+  return(mean(d))
+}
+
+hrv_sd <- function(x) {
+  index = c(which(x==1))
+  d = diff(index)
+  return(sd(d))
+}
+
+hrv_rms <- function(x) {
+  index = which(x==1)
+  d = diff(index)
+  return(sqrt(sum(d^2)))
+}
+
+
 for (i in 1:(chest_wrist$Participant %>% unique() %>% length())) {
   p <- chest_wrist$Participant %>% unique() %>% .[i]
   subject_p <- chest_wrist %>% filter(Participant == p)
@@ -44,6 +65,7 @@ for (i in 1:(chest_wrist$Participant %>% unique() %>% length())) {
   
   #labels
   label <- rollapply(subject_p$Label, 240, first)
+  label_5hz <- rollapply(subject_p$Label, 20, first)
   
   # chest EDA
   mean_EDA <- rollapply(subject_p$EDA, 240, mean)
@@ -93,25 +115,42 @@ for (i in 1:(chest_wrist$Participant %>% unique() %>% length())) {
   )
   
   # wrist BVP
-  mean_wrist_BVP <- rollapply(subject_p$BVP_wrist, 240, mean)
-  sd_wrist_BVP <- rollapply(subject_p$BVP_wrist, 240, sd)
+  heart_peak <- peakpick(subject_p$BVP_wrist, 1,  deriv.lim = 4, peak.min.sd = 0.5)
+  heart_peak1 <- ifelse(heart_peak == TRUE, 1, 0)
+  mean_heart_rate_wrist_BVP <- rollapply(heart_peak1, 240, sum)
+  sd_heart_rate_wrist_BVP <- rollapply(heart_peak1, 240, sd)
+  mean_heart_rate_variability_wrist_BVP <- rollapply(heart_peak1,240, hrv_mean)
+  sd_heart_rate_variability_wrist_BVP <- rollapply(heart_peak1,240,hrv_sd)
+  rms_heart_rate_variability_wrist_BVP <- rollapply(heart_peak1,240, hrv_rms)
   
   BVP_wrist_df <- tibble(
     participant = p,
     label = label,
-    mean_wrist_BVP = mean_wrist_BVP,
-    sd_wrist_BVP = sd_wrist_BVP
+    mean_heart_rate_wrist_BVP = mean_heart_rate_wrist_BVP,
+    sd_heart_rate_wrist_BVP = sd_heart_rate_wrist_BVP,
+    mean_heart_rate_variability_wrist_BVP = mean_heart_rate_variability_wrist_BVP,
+    sd_heart_rate_variability_wrist_BVP = sd_heart_rate_variability_wrist_BVP,
+    rms_heart_rate_variability_wrist_BVP = rms_heart_rate_variability_wrist_BVP
   )
   
   # chest ECG
-  mean_chest_ECG <- rollapply(subject_p$ECG, 240, mean)
-  sd_chest_ECG <- rollapply(subject_p$ECG, 240, sd)
+  heart_peaks <- peakpick(subject_p$ECG, 1)
+  heart_peaks1 <- ifelse(heart_peaks == TRUE, 1, 0)
+  mean_heart_rate_chest_ECG <- rollapply(heart_peaks1, 240, sum)
+  sd_heart_rate_chest_ECG <- rollapply(heart_peaks1, 240, sd)
+  mean_heart_rate_variability_chest_ECG <- rollapply(heart_peaks1,240, hrv_mean)
+  sd_heart_rate_variability_chest_ECG <- rollapply(heart_peaks1,240,hrv_sd)
+  rms_heart_rate_variability_chest_ECG <- rollapply(heart_peaks1,240, hrv_rms)
+  
   
   ECG_chest_df <- tibble(
     participant = p,
     label = label,
-    mean_chest_ECG = mean_chest_ECG,
-    sd_chest_ECG =  sd_chest_ECG
+    mean_heart_rate_chest_ECG = mean_heart_rate_chest_ECG,
+    sd_heart_rate_chest_ECG = sd_heart_rate_chest_ECG,
+    mean_heart_rate_variability_chest_ECG = mean_heart_rate_variability_chest_ECG,
+    sd_heart_rate_variability_chest_ECG = sd_heart_rate_variability_chest_ECG,
+    rms_heart_rate_variability_chest_ECG = rms_heart_rate_variability_chest_ECG
   )
   
   # wrist Temp
@@ -219,6 +258,7 @@ for (i in 1:(chest_wrist$Participant %>% unique() %>% length())) {
 for (i in 1:(chest_wrist$Participant %>% unique() %>% length())) {
   p <- chest_wrist$Participant %>% unique() %>% .[i]
   subject_p <- chest_wrist %>% filter(Participant == p)
+  label_5hz <- rollapply(subject_p$Label, 20, first)
   
   # chest ACC
   mean_chest_ACC_X <- rollapply(subject_p$ACC_chest_X, 20, mean)
@@ -241,7 +281,7 @@ for (i in 1:(chest_wrist$Participant %>% unique() %>% length())) {
   
   ACC_chest_df <- tibble(
     participant = p,
-    label = label,
+    label = label_5hz,
     mean_chest_ACC_X = mean_chest_ACC_X,
     mean_chest_ACC_Y = mean_chest_ACC_Y,
     mean_chest_ACC_Z = mean_chest_ACC_Z,
@@ -278,7 +318,7 @@ for (i in 1:(chest_wrist$Participant %>% unique() %>% length())) {
   
   ACC_wrist_df <- tibble(
     participant = p,
-    label = label,
+    label = label_5hz,
     mean_wrist_ACC_X = mean_wrist_ACC_X,
     mean_wrist_ACC_Y = mean_wrist_ACC_Y,
     mean_wrist_ACC_Z = mean_wrist_ACC_Z,
@@ -325,12 +365,17 @@ final_data <- bind_cols(EDA_chest_eng,
                         exhale_eng %>% select(-participant, -label),
                         resp_eng %>% select(-participant, -label),
                         breath_eng %>% select(-participant, -label),
-                        ACC_chest_eng %>% select(-participant, -label),
-                        ACC_wrist_eng %>% select(-participant, -label),
+#                        ACC_chest_eng %>% select(-participant, -label),
+#                        ACC_wrist_eng %>% select(-participant, -label),
                         BVP_wrist_eng %>% select(-participant, -label),
                         ECG_chest_eng %>% select(-participant, -label))
+
+final_data_acc <- bind_cols(ACC_chest_eng,
+                            ACC_wrist_eng)
 
 final_data <- final_data %>%
   mutate(i_e_ratio = abs(mean_inhale/mean_exhale))
 saveRDS(final_data, file = "final_data.Rds")
  
+#only for ACC
+saveRDS(final_data_acc, file= "final_data_acc.Rds")
