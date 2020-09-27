@@ -31,13 +31,15 @@ ECG_chest_list = list()
 hrv_mean <- function(x) {
   index = which(x==1)
   d = diff(index)
-  return(mean(d))
+  x <- mean(d)
+  return(ifelse(is.na(x), 0, x))
 }
 
 hrv_sd <- function(x) {
-  index = c(which(x==1))
+  index = which(x==1)
   d = diff(index)
-  return(sd(d))
+  x <- sd(d)
+  return(ifelse(is.na(x),0,x))
 }
 
 hrv_rms <- function(x) {
