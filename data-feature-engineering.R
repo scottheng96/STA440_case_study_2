@@ -233,8 +233,8 @@ for (i in 1:15) {
     )
     
     # resp
-    min_resp <- rollapply(subject_p$exhale, 20, min, na.rm = TRUE)
-    max_resp <- rollapply(subject_p$exhale, 20, max, na.rm = TRUE)
+    min_resp <- rollapply(subject_p$Resp, 20, min, na.rm = TRUE)
+    max_resp <- rollapply(subject_p$Resp, 20, max, na.rm = TRUE)
     
     resp_df <- tibble(
       participant = p,
@@ -446,7 +446,9 @@ final_data <- final_data %>%
                                TRUE ~ mean_inhale)) %>%
   mutate(mean_exhale = case_when(is.na(mean_exhale) ~ 0.0,
                                TRUE ~ mean_exhale)) %>%
-  mutate(i_e_ratio = abs(mean_inhale/mean_exhale))
+  mutate(i_e_ratio = abs(mean_inhale/mean_exhale)) %>%
+  mutate(i_e_ratio = case_when(i_e_ratio > 10 ~ 10,
+                               TRUE ~ i_e_ratio))
 saveRDS(final_data, file = "final_data.Rds")
 
 #only for ACC
