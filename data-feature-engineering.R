@@ -136,8 +136,8 @@ for (i in 1:15) {
     # wrist BVP
     heart_peak <- peakpick(subject_p$BVP_wrist, 1,  deriv.lim = 4, peak.min.sd = 0.5)
     heart_peak1 <- ifelse(heart_peak == TRUE, 1, 0)
-    mean_heart_rate_wrist_BVP <- rollapply(heart_peak1, 20, sum)
-    sd_heart_rate_wrist_BVP <- rollapply(heart_peak1, 20, sd)
+    mean_heart_rate_wrist_BVP <- rollapply(heart_peak1, 20, sum, na.rm = TRUE)
+    sd_heart_rate_wrist_BVP <- rollapply(heart_peak1, 20, sd, na.rm = TRUE)
     mean_heart_rate_variability_wrist_BVP <- rollapply(heart_peak1,20, hrv_mean)
     sd_heart_rate_variability_wrist_BVP <- rollapply(heart_peak1,20,hrv_sd)
     rms_heart_rate_variability_wrist_BVP <- rollapply(heart_peak1,20, hrv_rms)
@@ -155,8 +155,8 @@ for (i in 1:15) {
     # chest ECG
     heart_peaks <- peakpick(subject_p$ECG, 1)
     heart_peaks1 <- ifelse(heart_peaks == TRUE, 1, 0)
-    mean_heart_rate_chest_ECG <- rollapply(heart_peaks1, 20, sum)
-    sd_heart_rate_chest_ECG <- rollapply(heart_peaks1, 20, sd)
+    mean_heart_rate_chest_ECG <- rollapply(heart_peaks1, 20, sum, na.rm = TRUE)
+    sd_heart_rate_chest_ECG <- rollapply(heart_peaks1, 20, sd, na.rm = TRUE)
     mean_heart_rate_variability_chest_ECG <- rollapply(heart_peaks1,20, hrv_mean)
     sd_heart_rate_variability_chest_ECG <- rollapply(heart_peaks1,20,hrv_sd)
     rms_heart_rate_variability_chest_ECG <- rollapply(heart_peaks1,20, hrv_rms)
@@ -436,6 +436,14 @@ final_data <- bind_cols(EDA_chest_eng,
 #                             ACC_wrist_eng)
 
 final_data <- final_data %>%
+  mutate(sd_inhale = case_when(is.na(sd_inhale) ~ 0.0,
+                                 TRUE ~ sd_inhale)) %>%
+  mutate(sd_exhale = case_when(is.na(sd_exhale) ~ 0.0,
+                               TRUE ~ sd_exhale)) %>%
+  mutate(mean_inhale = case_when(is.na(mean_inhale) ~ 0.0,
+                               TRUE ~ mean_inhale)) %>%
+  mutate(mean_exhale = case_when(is.na(mean_exhale) ~ 0.0,
+                               TRUE ~ mean_exhale)) %>%
   mutate(i_e_ratio = abs(mean_inhale/mean_exhale))
 saveRDS(final_data, file = "final_data.Rds")
 
