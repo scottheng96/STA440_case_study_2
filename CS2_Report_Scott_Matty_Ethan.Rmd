@@ -53,7 +53,11 @@ survey <- survey %>%
   rename(label = Label)
 
 sub_data <- sub_data %>%
-  rename(participant = Participant)
+  rename(participant = Participant) %>% 
+  mutate(`Dominant hand` = as.factor(`Dominant hand`),
+         Gender = as.factor(Gender),
+         `Height (cm)` = as.double(`Height (cm)`),
+         `Weight (kg)` = as.double(`Weight (kg)`))
 
 all_data <- final_data %>% 
   left_join(survey, by=c("participant", "label")) %>% 
@@ -197,7 +201,11 @@ cm
 
 misclass_rate = (64+27)/(4339+64+27+7888)
 misclass_rate
+
+print(sparse_no_survey_rf)
 ```
+
+
 
 
 # Introduction 
