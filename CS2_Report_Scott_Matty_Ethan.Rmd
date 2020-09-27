@@ -184,7 +184,7 @@ require(caTools)
 # cm
 # 
 # all_no_survey_rf <- randomForest(
-#   label ~ participant + mean_EDA + sd_EDA + min_EDA + max_EDA + range_EDA + mean_EDA_wrist + sd_EDA_wrist + min_EDA_wrist + max_EDA_wrist + range_EDA_wrist + mean_EMG + sd_EMG + max_EMG + min_EMG + range_EMG + mean_Temp_chest + sd_Temp_chest + min_Temp_chest + max_Temp_chest + range_Temp_chest + mean_Temp_wrist + sd_Temp_wrist + min_Temp_wrist + max_Temp_wrist + range_Temp_wrist + mean_inhale + sd_inhale + mean_exhale + sd_exhale + min_resp + max_resp + range_resp + mean_breath + sd_breath + min_breath + max_breath + range_breath + mean_chest_ACC_X + mean_chest_ACC_Y + mean_chest_ACC_Z + mean_chest_ACC_sum + sd_chest_ACC_X + sd_chest_ACC_Y + sd_chest_ACC_Z + sd_chest_ACC_sum + peak_chest_ACC_X + peak_chest_ACC_Y + peak_chest_ACC_Z + mean_ACC_chest_mag + sd_ACC_chest_mag + mean_wrist_ACC_X + mean_wrist_ACC_Y + mean_wrist_ACC_Z + mean_wrist_ACC_sum + sd_wrist_ACC_X + sd_wrist_ACC_Y + sd_wrist_ACC_Z + sd_wrist_ACC_sum + peak_wrist_ACC_X + peak_wrist_ACC_Y + peak_wrist_ACC_Z + sd_ACC_wrist_mag + Age + Gender+ Height + Hand + Weight, data=train)
+#   label ~ participant + mean_EDA + sd_EDA + min_EDA + max_EDA + range_EDA + mean_EDA_wrist + sd_EDA_wrist + min_EDA_wrist + max_EDA_wrist + range_EDA_wrist + mean_EMG + sd_EMG + max_EMG + min_EMG + range_EMG + mean_Temp_chest + sd_Temp_chest + min_Temp_chest + max_Temp_chest + range_Temp_chest + mean_Temp_wrist + sd_Temp_wrist + min_Temp_wrist + max_Temp_wrist + range_Temp_wrist + mean_inhale + sd_inhale + mean_exhale + sd_exhale + min_resp + max_resp + range_resp + mean_breath + sd_breath + min_breath + max_breath + range_breath + mean_chest_ACC_X + mean_chest_ACC_Y + mean_chest_ACC_Z + mean_chest_ACC_sum + sd_chest_ACC_X + sd_chest_ACC_Y + sd_chest_ACC_Z + sd_chest_ACC_sum + peak_chest_ACC_X + peak_chest_ACC_Y + peak_chest_ACC_Z + mean_ACC_chest_mag + sd_ACC_chest_mag + mean_wrist_ACC_X + mean_wrist_ACC_Y + mean_wrist_ACC_Z + mean_wrist_ACC_sum + sd_wrist_ACC_X + sd_wrist_ACC_Y + sd_wrist_ACC_Z + sd_wrist_ACC_sum + peak_wrist_ACC_X + peak_wrist_ACC_Y + peak_wrist_ACC_Z + sd_ACC_wrist_mag + mean_heart_rate_wrist_BVP + sd_heart_rate_wrist_BVP + mean_heart_rate_variability_wrist_BVP + sd_heart_rate_variability_wrist_BVP + rms_heart_rate_variability_wrist_BVP +  mean_heart_rate_chest_ECG + sd_heart_rate_chest_ECG + mean_heart_rate_variability_chest_ECG + sd_heart_rate_variability_chest_ECG + rms_heart_rate_variability_chest_ECG + i_e_ratio + Age + Gender+ Height + Hand + Weight, data=train)
 # round(importance(all_no_survey_rf), 2)
 # 
 # pred = predict(all_no_survey_rf, newdata=test)
@@ -203,6 +203,18 @@ misclass_rate = (64+27)/(4339+64+27+7888)
 misclass_rate
 
 print(sparse_no_survey_rf)
+
+wrist_rf <- randomForest(
+  label ~ participant + min_EDA_wrist + max_EDA_wrist + range_EDA_wrist + sd_wrist_ACC_Z, data=train)
+round(importance(wrist_rf), 2)
+
+pred = predict(wrist_rf, newdata=test)
+cm=table(test$label, pred)
+cm
+
+misclass_rate = (5+20)/(4398+5+20+7895)
+misclass_rate
+
 ```
 
 
