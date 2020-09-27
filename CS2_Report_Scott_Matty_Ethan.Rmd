@@ -48,15 +48,20 @@ final_data <- readRDS("final_data.Rds")
 sub_data <- readRDS("subj_df.Rds")
 
 survey <- survey %>%
-  rename(label = Label) %>% 
-  mutate(label = as.factor(label))
+  rename(label = Label)
 
 sub_data <- sub_data %>%
   rename(participant = Participant)
 
 all_data <- final_data %>% 
   left_join(survey, by=c("participant", "label")) %>% 
-  left_join(sub_data, by=c("participant"))
+  left_join(sub_data, by=c("participant")) %>% 
+  mutate(label = as.factor(label)) %>% 
+  filter(label != 1) %>% 
+  mutate(label = case_when(
+    label ==  2 ~ 1,
+    label == 3 ~ 0,
+  )) 
 
 ```
 
