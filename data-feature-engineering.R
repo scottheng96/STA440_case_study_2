@@ -220,6 +220,9 @@ for (i in 1:(chest_wrist$Participant %>% unique() %>% length())) {
   p <- chest_wrist$Participant %>% unique() %>% .[i]
   subject_p <- chest_wrist %>% filter(Participant == p)
   
+  #labels
+  label <- rollapply(subject_p$Label, 20, first)
+  
   # chest ACC
   mean_chest_ACC_X <- rollapply(subject_p$ACC_chest_X, 20, mean)
   mean_chest_ACC_Y <- rollapply(subject_p$ACC_chest_Y, 20, mean)
