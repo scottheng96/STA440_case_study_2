@@ -56,20 +56,20 @@ sub_data <- sub_data %>%
 all_data <- final_data %>% 
   left_join(survey, by=c("participant", "label")) %>% 
   left_join(sub_data, by=c("participant")) %>% 
-  mutate(label = as.factor(label)) %>% 
   filter(label != 1) %>% 
   mutate(label = case_when(
     label ==  2 ~ 1,
     label == 3 ~ 0,
-  )) 
+  )) %>% 
+  mutate(label = as.factor(label)) 
 
 ```
 
 ```{r train-test}
 set.seed(20200922)
 idx = createDataPartition(all_data$label, p = 0.8, list = FALSE)
-train = temp_chest_eng_df[idx, ]
-test = temp_chest_eng_df[-idx, ]
+train = all_data[idx, ]
+test = all_data[-idx, ]
 
 train_control <- trainControl(method="repeatedcv", number = 5, savePredictions = T) # this is the cross validation
 
@@ -147,7 +147,7 @@ The dataset also included information about each of the subject’s personal cha
 
 The brain takes .9 milliseconds to shift a body into a full stress response, which suggests that these data should be sampled at approximately 1111 Hz to properly identify a state of stress. However, the highest-resolution data is sampled at 700 Hz, which suggests that these data are not granular enough to fully capture a shift to stress. Thus, with computational cost in mind, we downsampled our data to 4Hz. We assigned a unique ID to each of the 15 subjects, and also added their personal characteristics. Since we are primarily interested in differentiating between stress and amusement, we only kept samples that were labeled 2 (stress) or 3 (amusement). We then relabeled amusement as 0 and stress as 1.
 
-Next, we calculated features for the different modalities, which are displayed in Table #.  Segmentation of the physiological signals was done using a sliding window, with a window shift of 0.25 seconds. The ACC features were calculated with a 5 second window size [[3]][Bibliography] and the physiological features were calculated using a 60 second window size [[4]][Bibliography]. 
+Next, we calculated features for the different modalities, which are displayed in Table #.  Segmentation of the physiological signals was done using a sliding window, with a window shift of 0.25 seconds. The ACC and physiological features were both calculated with a 5 second window size [[3]][Bibliography] [[4]][Bibliography]. 
 
 ## Model Selection 
 
@@ -171,4 +171,4 @@ Next, we calculated features for the different modalities, which are displayed i
 
 3. M. Arif and A. Kattan. (2015). Physical Activities Monitoring Using Wearable Acceleration Sensors Attached to the Body. PLoS ONE 10, 7.
 
-4. S. Kreibig. (2010). Autonomic nervous system activity in emotion: A review. Biological Psychology 84, 3,  394–421.
+4. G. Uy et al. (2013). Correlation of Stress Inducers and Physiological Signals with Continuous Stress Annotations. WCTP 2012, PICT 7, pp. 178–183.
