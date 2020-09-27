@@ -7,15 +7,14 @@ output: pdf_document
 
 ```{r}
 library(tidyverse)
-
+library(corrplot)
 ```
 
 ```{r}
 data <- readRDS("final_data.Rds")
 raw_data <- readRDS("chest_and_wrist.Rds")
+data_acc <- readRDS("final_data_acc.Rds")
 ```
-
-
 
 ```{r temp-plots-raw}
 ggplot(raw_data, aes(x = X1, y = Temp, color = Participant)) + geom_point()
@@ -56,7 +55,7 @@ ggplot(data, aes(mean_breath)) + facet_wrap(~participant) + geom_histogram()
 ggplot(data, aes(sd_breath)) + facet_wrap(~participant) + geom_histogram()
 ggplot(data, aes(range_breath)) + facet_wrap(~participant) + geom_histogram()
 
-ggplot(data, aes(i_e_ratio)) + facet_wrap(~participant) + geom_histogram()
+#ggplot(data, aes(i_e_ratio)) + facet_wrap(~participant) + geom_histogram(binwidth = 5) 
 ```
 
 ```{r transformed-EMG-EDA}
@@ -113,6 +112,77 @@ pairs.panels(EMG_chest_eng_df[,-c(1,2)],
              
 )
 ```
+```{r ACC}
+data_acc$participant <- data_acc$participant...1
+data_acc$label <- data_acc$label...2
+ggplot(data_acc, aes(mean_chest_ACC_X, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram(bindwith=30)
+ggplot(data_acc, aes(sd_chest_ACC_X, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram(bindwith=30)
 
+ggplot(data_acc, aes(mean_wrist_ACC_Y, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram(bindwith=30)
+ggplot(data_acc, aes(sd_wrist_ACC_Y, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram(bindwith=30)
+
+ggplot(data_acc, aes(peak_chest_ACC_Z, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram(bindwith=30)
+ggplot(data_acc, aes(peak_wrist_ACC_Z, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram(bindwith=30)
+
+ggplot(data_acc, aes(mean_ACC_chest_mag, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram(bindwith=30)
+ggplot(data_acc, aes(sd_ACC_chest_mag, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram(bindwith=30)
+```
+
+```{r}
+subset_acc <- data_acc[c("mean_chest_ACC_sum", "sd_chest_ACC_sum", "mean_wrist_ACC_sum", "sd_wrist_ACC_sum")]
+pairs.panels(subset_acc, 
+             method = "pearson", # correlation method
+             hist.col = "#00AFBB",
+             density = TRUE,  # show density plots
+             
+)
+```
+
+```{r BVP wrist}
+raw_data %>% 
+  mutate(row = row_number()) %>% 
+  ggplot(aes(x = row, y = BVP_wrist, color = as.factor(Label))) + 
+  geom_line() + 
+  facet_wrap(Participant~. ,  scales = "free")
+
+data$mean_heart_rate_variability_wrist_BVP <- ifelse(is.nan(data$mean_heart_rate_variability_wrist_BVP),0, data$mean_heart_rate_variability_wrist_BVP)
+data$sd_heart_rate_variability_wrist_BVP <- ifelse(is.nan(data$sd_heart_rate_variability_wrist_BVP),0, data$sd_heart_rate_variability_wrist_BVP)
+
+ggplot(data, aes(mean_heart_rate_wrist_BVP, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram()
+ggplot(data, aes(sd_heart_rate_wrist_BVP, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram()
+ggplot(data, aes(mean_heart_rate_variability_wrist_BVP, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram()
+ggplot(data, aes(sd_heart_rate_variability_wrist_BVP, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram()
+ggplot(data, aes(rms_heart_rate_variability_wrist_BVP, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram()
+
+subset_bvp <- data[c("mean_heart_rate_wrist_BVP","sd_heart_rate_wrist_BVP","mean_heart_rate_variability_wrist_BVP","sd_heart_rate_variability_wrist_BVP","rms_heart_rate_variability_wrist_BVP")]
+
+c <- cor(subset_bvp)
+corrplot(c)
+```
+
+```{r ECG}
+raw_data %>% 
+  mutate(row = row_number()) %>% 
+  ggplot(aes(x = row, y = ECG, color = as.factor(Label))) + 
+  geom_line() + 
+  facet_wrap(Participant~. ,  scales = "free")
+
+data$sd_heart_rate_variability_chest_ECG <- ifelse(is.nan(data$sd_heart_rate_variability_chest_ECG),0, data$sd_heart_rate_variability_chest_ECG)
+
+ggplot(data, aes(mean_heart_rate_chest_ECG, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram()
+ggplot(data, aes(sd_heart_rate_chest_ECG, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram()
+ggplot(data, aes(mean_heart_rate_variability_chest_ECG, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram()
+ggplot(data, aes(sd_heart_rate_variability_chest_ECG, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram()
+ggplot(data, aes(rms_heart_rate_variability_chest_ECG, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram()
+
+subset_ecg <- data[c("mean_heart_rate_chest_ECG",
+                    "sd_heart_rate_chest_ECG",
+                    "mean_heart_rate_variability_chest_ECG",
+                    "sd_heart_rate_variability_chest_ECG",
+                    "rms_heart_rate_variability_chest_ECG")]
+
+c1 <- cor(subset_ecg)
+corrplot(c1)
+```
 
 
