@@ -189,15 +189,32 @@ vif(lr_model_final_wrist$finalModel)
 ```
 
 ```{r full-logistic-model}
-glm(label ~ participant+ sd_EDA+ sd_EDA_wrist+ sd_Temp_chest+ sd_Temp_wrist+ min_Temp_wrist+ mean_EMG+min_EMG+ sd_inhale+ sd_exhale+ sd_breath+ min_breath+ max_breath+i_e_ratio+ mean_ACC_chest_mag+ sd_ACC_chest_mag+ mean_ACC_wrist_mag+ sd_ACC_wrist_mag+ sd_heart_rate_wrist_BVP+ sd_heart_rate_variability_wrist_BVP+ rms_heart_rate_variability_wrist_BVP+ sd_heart_rate_chest_ECG+ sd_heart_rate_variability_chest_ECG+ rms_heart_rate_variability_chest_ECG + 
-      participant*sd_EDA , # try different interactions 
+model <- glm(label ~ participant+ sd_EDA+ sd_EDA_wrist+ sd_Temp_chest+ sd_Temp_wrist+ min_Temp_wrist+ mean_EMG+min_EMG+ sd_inhale+ sd_exhale+ sd_breath+ min_breath+ max_breath+i_e_ratio+ mean_ACC_chest_mag+ sd_ACC_chest_mag+ mean_ACC_wrist_mag+ sd_ACC_wrist_mag+ sd_heart_rate_wrist_BVP+ sd_heart_rate_variability_wrist_BVP+ rms_heart_rate_variability_wrist_BVP+ sd_heart_rate_chest_ECG+ sd_heart_rate_variability_chest_ECG+ rms_heart_rate_variability_chest_ECG + 
+      participant*sd_EDA_wrist + sd_heart_rate_variability_chest_ECG*participant + rms_heart_rate_variability_wrist_BVP*participant, # try different interactions 
     data = train, family = "binomial") %>%
   stepAIC(trace = FALSE)
 
-summary(chest_m3)
+# saved the model
+# save(model, file = 'savedmodel')
 
-car::vif(chest_m3)%>% round(2) %>% kable() 
+# Model is pre-ran and save, can be loaded to save time- loading and calling 'model'
+# load('savedmodel')
+# model
 
+# prediction
+pred <- predict(model, test, type="response")
+pred <- ifelse(pred > 0.5, 1, 0)
+mean(pred == test$label)
+
+
+
+summary(model)
+
+car::vif(model)%>% round(2) %>% kable() 
+
+```
+
+```{r}
 ```
 
 
