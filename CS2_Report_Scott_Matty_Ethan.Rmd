@@ -190,6 +190,9 @@ glm(label ~ participant+ sd_EDA+ sd_EDA_wrist+ sd_Temp_chest+ sd_Temp_wrist+ min
     data = train, family = "binomial") %>%
   stepAIC(trace = FALSE)
 
+summary(chest_m3)
+
+car::vif(chest_m3)%>% round(2) %>% kable() 
 
 ```
 
