@@ -207,8 +207,9 @@ cm(lr_model_final_wrist %>% predict())
 
 $$
 Y_i \sim Bernoulli(\pi_i) \\
-log(\frac{\pi_i}{1 - \pi_i}) = \beta_0 + \beta_1 \ \sigma^W_{EDA} + \beta_2 \ \sigma^W_{ACC} + \beta_3 \ \sigma^W_{HRV} +  \sum_{j=2}^{15}\beta_{4j} \ I(subject_i = j) + \\
-\sum_{j=2}^{15} \beta_{5j}\ \sigma^W_{ACC} * I(subject_i = j)
+log(\frac{\pi_i}{1 - \pi_i}) = \beta_0 + \beta_1 \ \sigma^W_{EDA} + \beta_2 \ \sigma^W_{ACC} + \beta_3 \ \sigma^W_{HRV} +  \beta_4 \ \sigma^W_{EDA} * \sigma^W_{HRV} + \\
+\beta_5 \ \sigma^W_{EDA} * \sigma^W_{ACC} + \beta_6 \ \sigma^W_{HRV} * \sigma^W_{ACC} + \sum_{j=2}^{15}\beta_{7j} \ I(subject_i = j) + \\
+\sum_{j=2}^{15} \beta_{8j}\ \sigma^W_{ACC} * I(subject_i = j)
 
 $$
 
