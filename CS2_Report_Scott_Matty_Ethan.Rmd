@@ -182,13 +182,15 @@ calc_metrics(lr_model_final_wrist, test, 5) %>%   kable(booktabs = T,
 add_header_above(c("Cross Validation Data" = 3, "Test Data" = 3))
 vif(lr_model_final_wrist$finalModel) %>% kable()
 
-# rf_model_final_wrist <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
-#                                 sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag,
-#                               data = train, trControl = train_control, 
-#                               method = "rf") 
-# summary(rf_model_final_wrist$finalModel)
-# calc_metrics(rf_model_final_wrist, test)
-# vif(rf_model_final_wrist$finalModel)
+rf_model_final_wrist <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag +
+                                sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag,
+                              data = train, trControl = train_control,
+                              method = "rf")
+
+save(rf_model_final_wrist, file = 'rf_model_final_wrist')
+summary(rf_model_final_wrist$finalModel)
+calc_metrics(rf_model_final_wrist, test, 5)
+vif(rf_model_final_wrist$finalModel)
 ```
 
 $$
@@ -326,22 +328,19 @@ misclass_rate
 ```
 
 ```{r cv-random-forest, eval=FALSE}
-newidx = createDataPartition(train$label, p = 0.01, list = FALSE)
-newtrain = train[newidx, ]
-#test = forest_data[-idx, ]
 sparse_no_survey_rf <- train(
-  label ~ participant +  max_EDA_wrist + sd_ACC_chest_mag, data=newtrain,
+  label ~ participant +  max_EDA_wrist + sd_ACC_chest_mag, data=train,
   trControl = train_control, method = "rf"
 )
-
-calc_metrics(sparse_no_survey_rf, test)
+save(sparse_no_survey_rf, file = 'sparse_no_survey_rf')
+calc_metrics(sparse_no_survey_rf, test, 5)
 
 
 wrist_rf <- train(
-  label ~ participant + min_EDA_wrist + max_EDA_wrist + range_EDA_wrist + sd_wrist_ACC_Z, data=newtrain,
+  label ~ participant + min_EDA_wrist + max_EDA_wrist + range_EDA_wrist + sd_wrist_ACC_Z, data=train,
   trControl = train_control, method = "rf")
-
-calc_metrics(wrist_rf, test)
+save(wrist_rf, file = 'wrist_rf')
+calc_metrics(wrist_rf, test, 5)
 
 ```
 
