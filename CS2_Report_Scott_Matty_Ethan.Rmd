@@ -79,8 +79,8 @@ all_data <- final_data %>%
     label ==  2 ~ 1,
     label == 3 ~ 0
   )) %>% 
-  mutate(label = as.factor(label)) 
-
+  mutate(label = as.factor(label)) %>% 
+  mutate(participant = fct_relevel(participant,  c('S10', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S11', 'S13', 'S14', 'S15', 'S16', 'S17')))
 ```
 
 
@@ -176,7 +176,7 @@ calc_metrics(lr_model_final_wrist, test, 5) %>%   kable(booktabs = T,
         )) %>% 
   kable_styling(latex_options = c("hold_position")) %>%
 add_header_above(c("Cross Validation Data" = 3, "Test Data" = 3))
-vif(lr_model_final_wrist$finalModel)
+vif(lr_model_final_wrist$finalModel) %>% kable()
 
 # rf_model_final_wrist <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
 #                                 sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag,
@@ -186,6 +186,15 @@ vif(lr_model_final_wrist$finalModel)
 # calc_metrics(rf_model_final_wrist, test)
 # vif(rf_model_final_wrist$finalModel)
 ```
+
+$$
+Y_i \sim Bernoulli(\pi_i) \\
+log(\frac{\pi_i}{1 - \pi_i}) = \beta_0 + \beta_1 \ \sigma^W_{EDA} + \beta_2 \ \sigma^W_{ACC} + \beta_3 \ \sigma^W_{HRV} +  \sum_{j=2}^{15}\beta_{4j} \ I(subject_i = j) + \\
+\sum_{j=2}^{15} \beta_{5j}\ \sigma^W_{ACC} * I(subject_i = j)
+$$
+
+$i$ corresponds to each sample, and $Y_i$ indicates the corresponding state (1 = stress or 0 = amusement). $subject_i$ represents the unique subject ID that was assigned to each of the 15 participants. The reference level for $subject$ is Subject 10 (S10), who had the highest number of samples in the filtered dataset. The remaining levels $j \in (2, 3, \dots, 14, 15)$ correspond to S2, S3, S4, S5, S6, S7, S8, S9, S11, S13, S14, S15, S16 and S17 respectively. 
+
 
 ```{r full-logistic-model}
 glm(label ~ participant+ sd_EDA+ sd_EDA_wrist+ sd_Temp_chest+ sd_Temp_wrist+ min_Temp_wrist+ mean_EMG+min_EMG+ sd_inhale+ sd_exhale+ sd_breath+ min_breath+ max_breath+i_e_ratio+ mean_ACC_chest_mag+ sd_ACC_chest_mag+ mean_ACC_wrist_mag+ sd_ACC_wrist_mag+ sd_heart_rate_wrist_BVP+ sd_heart_rate_variability_wrist_BVP+ rms_heart_rate_variability_wrist_BVP+ sd_heart_rate_chest_ECG+ sd_heart_rate_variability_chest_ECG+ rms_heart_rate_variability_chest_ECG + 
