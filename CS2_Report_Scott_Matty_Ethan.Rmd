@@ -222,12 +222,6 @@ car::vif(model)%>% round(2) %>% kable()
 
 ```
 
-```{r}
-```
-
-
-
-
 ```{r random-forests}
 set.seed(20200922)
 forest_data <- all_data %>% 
