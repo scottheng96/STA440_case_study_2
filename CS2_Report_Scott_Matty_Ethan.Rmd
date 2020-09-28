@@ -100,14 +100,14 @@ round_perc = function(x) {
   }
 }
 
-calc_metrics = function(model, testing_data) {
+calc_metrics = function(model, testing_data, folds) {
   list = list()
   acc_list = c()
   f1_list = c()
   AUC_list = c()
   
   # metrics for cross validated data
-  for (i in 1:5) {
+  for (i in 1:folds) {
     fold <- model$pred %>% pull(Resample) %>% unique() %>% .[i]
     
     fold_df <- model$pred %>% 
@@ -170,14 +170,13 @@ lr_model_final_wrist <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_
                               method = "glm",
                               family ="binomial") 
 summary(lr_model_final_wrist$finalModel)
-calc_metrics(lr_model_final_wrist, test) %>%   kable(booktabs = T, 
+calc_metrics(lr_model_final_wrist, test, 5) %>%   kable(booktabs = T, 
         caption = "Parameters obtained with Model 1, with 95\\% Credible Intervals (CI)",
         col.names = c("Accuracy", "F1-Score", "AUC", "Accuracy", "F1-Score", "AUC"
         )) %>% 
   kable_styling(latex_options = c("hold_position")) %>%
 add_header_above(c("Cross Validation Data" = 3, "Test Data" = 3))
 vif(lr_model_final_wrist$finalModel)
-
 
 # rf_model_final_wrist <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
 #                                 sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag,
@@ -289,22 +288,22 @@ misclass_rate
 ```
 
 ```{r cv-random-forest, eval=FALSE}
-# newidx = createDataPartition(train$label, p = 0.01, list = FALSE)
-# newtrain = train[newidx, ]
-# #test = forest_data[-idx, ]
-# sparse_no_survey_rf <- train(
-#   label ~ participant +  sd_EDA_wrist + sd_ACC_chest_mag, data=train, 
-#   trControl = train_control, method = "rf"
-# )
-# 
-# calc_metrics(sparse_no_survey_rf, test)
-# 
-# 
-# wrist_rf <- train(
-#   label ~ participant + min_EDA_wrist + max_EDA_wrist + range_EDA_wrist + sd_wrist_ACC_Z, data=train, 
-#   trControl = train_control, method = "rf")
-# 
-# calc_metrics(wrist_rf, test)
+newidx = createDataPartition(train$label, p = 0.01, list = FALSE)
+newtrain = train[newidx, ]
+#test = forest_data[-idx, ]
+sparse_no_survey_rf <- train(
+  label ~ participant +  max_EDA_wrist + sd_ACC_chest_mag, data=newtrain,
+  trControl = train_control, method = "rf"
+)
+
+calc_metrics(sparse_no_survey_rf, test)
+
+
+wrist_rf <- train(
+  label ~ participant + min_EDA_wrist + max_EDA_wrist + range_EDA_wrist + sd_wrist_ACC_Z, data=newtrain,
+  trControl = train_control, method = "rf")
+
+calc_metrics(wrist_rf, test)
 
 ```
 
@@ -391,6 +390,27 @@ features_tbl %>%
 ## Testing MSE or something 
 
 ## Model Diagnostics 
+
+## Sensitivity Analysis 
+
+```{r}
+#sensitivity analysis with 10 folds --> pretty much the same 
+
+lr_model_final_wrist10_folds <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
+                                sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag,
+                              data = train, trControl = trainControl(method="repeatedcv", number = 10, savePredictions = T), 
+                              method = "glm",
+                              family ="binomial") 
+
+
+calc_metrics(lr_model_final_wrist10_folds, test, 10) %>%   kable(booktabs = T, 
+        caption = "Parameters obtained with Model 1, with 95\\% Credible Intervals (CI)",
+        col.names = c("Accuracy", "F1-Score", "AUC", "Accuracy", "F1-Score", "AUC"
+        )) %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+add_header_above(c("Cross Validation Data" = 3, "Test Data" = 3))
+```
+
 
 # Discussion
 
