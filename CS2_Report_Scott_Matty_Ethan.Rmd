@@ -32,6 +32,8 @@ pkgTest("MASS")
 pkgTest("cvAUC")
 pkgTest("car")
 pkgTest("broom")
+pkgTest("lme4")
+pkgTest("cAIC4")
 ```
 
 ```{r include=FALSE}
@@ -44,6 +46,8 @@ library(MASS)
 library(cvAUC)
 library(car)
 library(broom)
+library(lme4)
+library(cAIC4)
 
 knitr::opts_chunk$set(echo = FALSE,
                       message = FALSE,
@@ -186,7 +190,7 @@ vif(lr_model_final_wrist$finalModel)
 
 ```{r full-logistic-model}
 glm(label ~ participant+ sd_EDA+ sd_EDA_wrist+ sd_Temp_chest+ sd_Temp_wrist+ min_Temp_wrist+ mean_EMG+min_EMG+ sd_inhale+ sd_exhale+ sd_breath+ min_breath+ max_breath+i_e_ratio+ mean_ACC_chest_mag+ sd_ACC_chest_mag+ mean_ACC_wrist_mag+ sd_ACC_wrist_mag+ sd_heart_rate_wrist_BVP+ sd_heart_rate_variability_wrist_BVP+ rms_heart_rate_variability_wrist_BVP+ sd_heart_rate_chest_ECG+ sd_heart_rate_variability_chest_ECG+ rms_heart_rate_variability_chest_ECG + 
-      participant*sd_EDA, # try different interactions 
+      participant*sd_EDA , # try different interactions 
     data = train, family = "binomial") %>%
   stepAIC(trace = FALSE)
 
@@ -304,7 +308,24 @@ misclass_rate
 
 ```
 
+```{r Hierarchal Model}
+# Fixed Effects (survey & subdata variables)
+survey_var<- paste(colnames(survey))
+sub_var <- paste(colnames(sub_data))
+fixed_var <- c(survey_var, sub_var)
 
+fixed_var <- fixed_var[-c(2,37:42)] # removed missing SSSQ variables because of NA
+
+# Random Effects (wearable variables)
+wearable_var <- paste ("(1|",colnames(final_data)[-c(1,2)], ")")
+
+# Formula
+mlm_formula <- as.formula(paste("as.numeric(label) ~ participant + ", paste(wearable_var[c(9,50)], collapse= "+")))
+
+mlm <- lmer(mlm_formula, data = train, REML=FALSE,control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.rankZ = "ignore", check.nobs.vs.nRE="ignore", optimizer ="Nelder_Mead", ))
+summary(mlm)
+stepAIC(mlm, direction = "backward", trace = TRUE, data = train)
+```
 
 
 
