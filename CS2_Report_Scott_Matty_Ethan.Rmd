@@ -34,6 +34,8 @@ pkgTest("car")
 pkgTest("broom")
 pkgTest("lme4")
 pkgTest("cAIC4")
+pkgTest("boot")
+pkgTest("cvms")
 ```
 
 ```{r include=FALSE}
@@ -48,6 +50,8 @@ library(car)
 library(broom)
 library(lme4)
 library(cAIC4)
+library(boot)
+library(cvms)
 
 knitr::opts_chunk$set(echo = FALSE,
                       message = FALSE,
@@ -79,8 +83,8 @@ all_data <- final_data %>%
     label ==  2 ~ 1,
     label == 3 ~ 0
   )) %>% 
-  mutate(label = as.factor(label)) 
-
+  mutate(label = as.factor(label)) %>% 
+  mutate(participant = fct_relevel(participant,  c('S10', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S11', 'S13', 'S14', 'S15', 'S16', 'S17')))
 ```
 
 
@@ -100,14 +104,14 @@ round_perc = function(x) {
   }
 }
 
-calc_metrics = function(model, testing_data) {
+calc_metrics = function(model, testing_data, folds) {
   list = list()
   acc_list = c()
   f1_list = c()
   AUC_list = c()
   
   # metrics for cross validated data
-  for (i in 1:5) {
+  for (i in 1:folds) {
     fold <- model$pred %>% pull(Resample) %>% unique() %>% .[i]
     
     fold_df <- model$pred %>% 
@@ -169,39 +173,76 @@ lr_model_final_wrist <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_
                               data = train, trControl = train_control, 
                               method = "glm",
                               family ="binomial") 
+
 summary(lr_model_final_wrist$finalModel)
-calc_metrics(lr_model_final_wrist, test) %>%   kable(booktabs = T, 
+calc_metrics(lr_model_final_wrist, test, 5) %>%   kable(booktabs = T, 
         caption = "Parameters obtained with Model 1, with 95\\% Credible Intervals (CI)",
         col.names = c("Accuracy", "F1-Score", "AUC", "Accuracy", "F1-Score", "AUC"
         )) %>% 
   kable_styling(latex_options = c("hold_position")) %>%
 add_header_above(c("Cross Validation Data" = 3, "Test Data" = 3))
-vif(lr_model_final_wrist$finalModel)
+vif(lr_model_final_wrist$finalModel) %>% kable()
 
+rf_model_final_wrist <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag +
+                                sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag,
+                              data = train, trControl = train_control,
+                              method = "rf")
 
-# rf_model_final_wrist <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
-#                                 sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag,
-#                               data = train, trControl = train_control, 
-#                               method = "rf") 
-# summary(rf_model_final_wrist$finalModel)
-# calc_metrics(rf_model_final_wrist, test)
-# vif(rf_model_final_wrist$finalModel)
+save(rf_model_final_wrist, file = 'rf_model_final_wrist')
+summary(rf_model_final_wrist$finalModel)
+calc_metrics(rf_model_final_wrist, test, 5)
+vif(rf_model_final_wrist$finalModel)
 ```
+
+$$
+Y_i \sim Bernoulli(\pi_i) \\
+log(\frac{\pi_i}{1 - \pi_i}) = \beta_0 + \beta_1 \ \sigma^W_{EDA} + \beta_2 \ \sigma^W_{ACC} + \beta_3 \ \sigma^W_{HRV} +  \sum_{j=2}^{15}\beta_{4j} \ I(subject_i = j) + \\
+\sum_{j=2}^{15} \beta_{5j}\ \sigma^W_{ACC} * I(subject_i = j)
+$$
+
+$i$ corresponds to each sample, and $Y_i$ indicates the corresponding state (1 = stress or 0 = amusement). $subject_i$ represents the unique subject ID that was assigned to each of the 15 participants. The reference level for $subject$ is Subject 10 (S10), who had the highest number of samples in the filtered dataset. The remaining levels $j \in (2, 3, \dots, 14, 15)$ correspond to S2, S3, S4, S5, S6, S7, S8, S9, S11, S13, S14, S15, S16 and S17 respectively. 
+
 
 ```{r full-logistic-model}
-glm(label ~ participant+ sd_EDA+ sd_EDA_wrist+ sd_Temp_chest+ sd_Temp_wrist+ min_Temp_wrist+ mean_EMG+min_EMG+ sd_inhale+ sd_exhale+ sd_breath+ min_breath+ max_breath+i_e_ratio+ mean_ACC_chest_mag+ sd_ACC_chest_mag+ mean_ACC_wrist_mag+ sd_ACC_wrist_mag+ sd_heart_rate_wrist_BVP+ sd_heart_rate_variability_wrist_BVP+ rms_heart_rate_variability_wrist_BVP+ sd_heart_rate_chest_ECG+ sd_heart_rate_variability_chest_ECG+ rms_heart_rate_variability_chest_ECG + 
-      participant*sd_EDA , # try different interactions 
-    data = train, family = "binomial") %>%
-  stepAIC(trace = FALSE)
+lr_model_final_both <- train(label ~ participant+ sd_EDA+ sd_EDA_wrist+ sd_Temp_chest+ min_Temp_wrist+min_EMG+ sd_inhale+ sd_exhale+ max_breath+i_e_ratio+ mean_ACC_chest_mag+ sd_ACC_chest_mag+ sd_ACC_wrist_mag+ sd_heart_rate_wrist_BVP+ sd_heart_rate_variability_wrist_BVP+ rms_heart_rate_variability_wrist_BVP+ sd_heart_rate_chest_ECG+ rms_heart_rate_variability_chest_ECG + rms_heart_rate_variability_wrist_BVP*participant + sd_heart_rate_chest_ECG*participant, # try different interactions 
+    data = train, trControl = train_control, 
+                              method = "glm",
+                              family ="binomial")
 
-summary(chest_m3)
+# saved the model
+#save(lr_model_final_both, file = 'lr_model_final_both')
 
-car::vif(chest_m3)%>% round(2) %>% kable() 
+# Model is pre-ran and save, can be loaded to save time- loading and calling 'model'
+#load('lr_model_final_both')
+lr_model_final_both %>% summary()
+
+calc_metrics(lr_model_final_both, test, 5)
+# prediction
+pred <- predict(model, test, type="response")
+pred <- ifelse(pred > 0.5, 1, 0)
+mean(pred == test$label)
+
+target <- test$label
+
+summary(model)
+
+car::vif(lr_model_final_both$finalModel)%>% round(2) %>% kable() 
 
 ```
 
+```{r full-logistic-model (diagnostics)}
+#VIF values (measures multi-collinearity)
+vif(model)
 
-
+#Sensitivity Analysis
+prediction <- as.factor(pred)
+table <- tidy(table(tibble("target" = target,
+                     "prediction" = prediction)))
+plot_confusion_matrix(table, 
+                      targets_col = "target", 
+                      predictions_col = "prediction",
+                      counts_col = "n")
+```
 
 ```{r random-forests}
 set.seed(20200922)
@@ -289,22 +330,19 @@ misclass_rate
 ```
 
 ```{r cv-random-forest, eval=FALSE}
-# newidx = createDataPartition(train$label, p = 0.01, list = FALSE)
-# newtrain = train[newidx, ]
-# #test = forest_data[-idx, ]
-# sparse_no_survey_rf <- train(
-#   label ~ participant +  sd_EDA_wrist + sd_ACC_chest_mag, data=train, 
-#   trControl = train_control, method = "rf"
-# )
-# 
-# calc_metrics(sparse_no_survey_rf, test)
-# 
-# 
-# wrist_rf <- train(
-#   label ~ participant + min_EDA_wrist + max_EDA_wrist + range_EDA_wrist + sd_wrist_ACC_Z, data=train, 
-#   trControl = train_control, method = "rf")
-# 
-# calc_metrics(wrist_rf, test)
+sparse_no_survey_rf <- train(
+  label ~ participant +  max_EDA_wrist + sd_ACC_chest_mag, data=train,
+  trControl = train_control, method = "rf"
+)
+save(sparse_no_survey_rf, file = 'sparse_no_survey_rf')
+calc_metrics(sparse_no_survey_rf, test, 5)
+
+
+wrist_rf <- train(
+  label ~ participant + min_EDA_wrist + max_EDA_wrist + range_EDA_wrist + sd_wrist_ACC_Z, data=train,
+  trControl = train_control, method = "rf")
+save(wrist_rf, file = 'wrist_rf')
+calc_metrics(wrist_rf, test, 5)
 
 ```
 
@@ -391,6 +429,27 @@ features_tbl %>%
 ## Testing MSE or something 
 
 ## Model Diagnostics 
+
+## Sensitivity Analysis 
+
+```{r}
+#sensitivity analysis with 10 folds --> pretty much the same 
+
+lr_model_final_wrist10_folds <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
+                                sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag,
+                              data = train, trControl = trainControl(method="repeatedcv", number = 10, savePredictions = T), 
+                              method = "glm",
+                              family ="binomial") 
+
+
+calc_metrics(lr_model_final_wrist10_folds, test, 10) %>%   kable(booktabs = T, 
+        caption = "Parameters obtained with Model 1, with 95\\% Credible Intervals (CI)",
+        col.names = c("Accuracy", "F1-Score", "AUC", "Accuracy", "F1-Score", "AUC"
+        )) %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+add_header_above(c("Cross Validation Data" = 3, "Test Data" = 3))
+```
+
 
 # Discussion
 
