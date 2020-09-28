@@ -28,6 +28,10 @@ pkgTest("knitr")
 pkgTest("kableExtra")
 pkgTest("caret")
 pkgTest("randomForest")
+pkgTest("MASS")
+pkgTest("cvAUC")
+pkgTest("car")
+pkgTest("broom")
 ```
 
 ```{r include=FALSE}
@@ -36,6 +40,10 @@ library(knitr)
 library(kableExtra)
 library(caret)
 library(randomForest)
+library(MASS)
+library(cvAUC)
+library(car)
+library(broom)
 
 knitr::opts_chunk$set(echo = FALSE,
                       message = FALSE,
@@ -79,20 +87,23 @@ train = all_data[idx, ]
 test = all_data[-idx, ]
 
 train_control <- trainControl(method="repeatedcv", number = 5, savePredictions = T) # this is the cross validation
-
-lr_model1 <- train(label ~ ., 
-               data = train, trControl = train_control, 
-               method="glm", family="binomial") # simple LR
 ```
 
 ```{r metrics}
-calc_metrics = function(model) {
+round_perc = function(x) {
+  if (is.double(x)) {
+    round(x*100, digits = 2) 
+  }
+}
+
+calc_metrics = function(model, testing_data) {
   list = list()
   acc_list = c()
   f1_list = c()
   AUC_list = c()
   
-  for (i in 1:10) {
+  # metrics for cross validated data
+  for (i in 1:5) {
     fold <- model$pred %>% pull(Resample) %>% unique() %>% .[i]
     
     fold_df <- model$pred %>% 
@@ -119,14 +130,64 @@ calc_metrics = function(model) {
   AUC_mean = AUC_list %>% mean(na.rm=T) %>% round_perc()
   AUC_sd = AUC_list %>% sd(na.rm=T) %>% round_perc()
   
-  d <- tibble(
+  # metrics for testing data
+  pred <- predict(model, newdata = testing_data)
+  test_acc <- mean(pred == testing_data %>% pull(label))
+  
+  cm <- confusionMatrix(as.factor(pred), testing_data$label)
+  
+  precision <- posPredValue(pred, testing_data$label, positive="1")
+  recall <- sensitivity(pred, testing_data$label, positive="1")
+  test_F1 <- (2 * precision * recall) / (precision + recall)
+  
+  test_AUC <-  AUC(pred %>% as.double(), testing_data$label %>% as.double())
+  
+  cv_df <- tibble(
     Accuracy = paste(acc_mean, "±", acc_sd),
     F1 = paste(f1_mean, "±", f1_sd),
     AUC = paste(AUC_mean, "±", AUC_sd)
   )
-  return(d)
+  
+  test_df <- tibble(
+    Accuracy = test_acc %>% round_perc(), 
+    F1 = test_F1 %>% round_perc(),
+    AUC = test_AUC %>% round_perc()
+  )
+  return(bind_cols(cv_df, test_df))
 }
+
 # returns accuracy/F1score/AUC if you run the model using the previous  code
+```
+
+```{r logistic-regression-wrist}
+lr_model_final_wrist <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
+                                sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag,
+                              data = train, trControl = train_control, 
+                              method = "glm",
+                              family ="binomial") 
+summary(lr_model_final_wrist$finalModel)
+calc_metrics(lr_model_final_wrist, test) %>%   kable(booktabs = T, 
+        caption = "Parameters obtained with Model 1, with 95\\% Credible Intervals (CI)",
+        col.names = c("Accuracy", "F1-Score", "AUC", "Accuracy", "F1-Score", "AUC"
+        )) %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+add_header_above(c("Cross Validation Data" = 3, "Test Data" = 3))
+vif(lr_model_final_wrist$finalModel)
+
+
+# rf_model_final_wrist <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
+#                                 sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag,
+#                               data = train, trControl = train_control, 
+#                               method = "rf") 
+# summary(rf_model_final_wrist$finalModel)
+# calc_metrics(rf_model_final_wrist, test)
+# vif(rf_model_final_wrist$finalModel)
+```
+
+```{r eval=FALSE}
+ 
+
+
 ```
 
 
@@ -137,7 +198,7 @@ set.seed(20200922)
 forest_data <- all_data %>% 
   subset(select = -c(PANAS_Angry, PANAS_Irritated, SSSQ_Committed, SSSQ_Succeed, SSSQ_Motivated, SSSQ_Reflected, SSSQ_Concerned, SSSQ_Worried, Condition, PANAS_Sad))
 forest_data <- forest_data[1:(length(forest_data)-1)]
-  
+
 forest_data <- forest_data %>%
   mutate(participant = as.factor(participant),
          Age = as.numeric(Age),
@@ -149,9 +210,9 @@ forest_data <- forest_data %>%
 forest_data <- forest_data %>% 
   subset(select = -c(`Dominant hand`, `Height (cm)`, `Weight (kg)`))
 
-idx = createDataPartition(forest_data$label, p = 0.8, list = FALSE)
-train = forest_data[idx, ]
-test = forest_data[-idx, ]
+#idx = createDataPartition(forest_data$label, p = 0.8, list = FALSE)
+#train = forest_data[idx, ]
+#test = forest_data[-idx, ]
 
 #correlationMatrix <- cor(subset(forest_data, select = -c(Gender, Hand, participant, label)))
 #highlyCorrelated <- findCorrelation(correlationMatrix, cutoff=0.5, verbose = FALSE)
@@ -217,6 +278,27 @@ misclass_rate
 
 ```
 
+```{r cv-random-forest, eval=FALSE}
+# newidx = createDataPartition(train$label, p = 0.01, list = FALSE)
+# newtrain = train[newidx, ]
+# #test = forest_data[-idx, ]
+# sparse_no_survey_rf <- train(
+#   label ~ participant +  sd_EDA_wrist + sd_ACC_chest_mag, data=train, 
+#   trControl = train_control, method = "rf"
+# )
+# 
+# calc_metrics(sparse_no_survey_rf, test)
+# 
+# 
+# wrist_rf <- train(
+#   label ~ participant + min_EDA_wrist + max_EDA_wrist + range_EDA_wrist + sd_wrist_ACC_Z, data=train, 
+#   trControl = train_control, method = "rf")
+# 
+# calc_metrics(wrist_rf, test)
+
+```
+
+
 
 
 
@@ -243,6 +325,37 @@ The dataset also included information about each of the subject’s personal cha
 The brain takes .9 milliseconds to shift a body into a full stress response, which suggests that these data should be sampled at approximately 1111 Hz to properly identify a state of stress. However, the highest-resolution data is sampled at 700 Hz, which suggests that these data are not granular enough to fully capture a shift to stress. Thus, with computational cost in mind, we downsampled our data to 4Hz. We assigned a unique ID to each of the 15 subjects, and also added their personal characteristics. Since we are primarily interested in differentiating between stress and amusement, we only kept samples that were labeled 2 (stress) or 3 (amusement). We then relabeled amusement as 0 and stress as 1.
 
 Next, we calculated features for the different modalities, which are displayed in Table #.  Segmentation of the physiological signals was done using a sliding window, with a window shift of 0.25 seconds. The ACC and physiological features were both calculated with a 5 second window size [[3]][Bibliography] [[4]][Bibliography]. 
+
+```{r}
+features_tbl <- data.frame(
+  Metric = c(rep("Chest ACC", 1), rep("Chest ECG", 1), rep("Chest EDA",2), rep("Chest EMG",2), "Chest Resp", "Chest Temp", 
+             "Wrist ACC", "Wrist BVP", "Wrist EDA", "Wrist Temp"),
+  
+  Features = linebreak(c("Mean ($\\mu^C_{ACC}$), SD ($\\sigma^C_{ACC}$)", 
+               "Mean ($\\mu^C_{ECG}$), SD ($\\sigma^C_{ECG}$), Mean HRV ($\\mu^C_{HRV}$), SD HRV ($\\sigma^C_{HRV}$)", 
+               "Mean ($\\mu^C_{EDA}$), SD ($\\sigma^C_{EDA}$), Min ($Min^C_{EDA}$)", 
+               "Max ($Max^C_{EDA}$), Range ($Range^C_{EDA}$)", 
+               "Mean ($\\mu^C_{EMG}$), SD ($\\sigma^C_{EMG}$), Min ($Min^C_{EMG}$)", 
+               "Max ($Max^C_{EMG}$), Range ($Range^C_{EMG}$)", 
+               "Mean Std Deviation", 
+               "Mean ($\\mu^C_{T}$), SD ($\\sigma^C_{T}$), Min ($Min^C_{T}$), Max ($Max^C_{T}$), Range ($Range^C_{T}$)", 
+               "Mean ($\\mu^W_{ACC}$), SD ($\\sigma^W_{ACC}$)", 
+               "Mean Std Deviation Heart Rate Variability", 
+               "Mean ($\\mu^W_{EDA}$), SD ($\\sigma^W_{EDA}$), Min ($Min^W_{EDA}$), Max ($Max^W_{EDA}$), Range ($Range^C_{EDA}$)", 
+               "Mean ($\\mu^W_{T}$), SD ($\\sigma^W_{T}$), Min ($Min^W_{T}$), Max ($Max^W_{T}$), Range ($Range^W_{T}$)"))
+)
+
+features_tbl %>% 
+  kable("latex", escape=F, booktabs = T,
+        caption = "Summary of Sensor Data Categories, with the Extracted Predictors and Respective Symbols",) %>%
+  kable_styling(latex_options = c("hold_position")) %>% 
+  group_rows(index = c("Chest Sensor Data" = 8, "Wrist Sensor Data" = 4)) %>%
+  #column_spec(1, bold=T) %>%
+  collapse_rows(columns = 1, latex_hline = "major") %>% 
+  row_spec(0, bold = TRUE) %>% 
+  column_spec(column = c(2), latex_column_spec = "c")
+```
+
 
 ## Model Selection 
 
