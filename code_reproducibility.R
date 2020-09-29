@@ -91,7 +91,7 @@ calc_metrics = function(model, testing_data, folds) {
   
   test_F1 <- cm$byClass["F1"]
   
-  test_AUC <-  AUC(pred %>% as.double(), testing_data$label %>% as.double())
+  test_AUC <-  cvAUC::AUC(pred %>% as.double(), testing_data$label %>% as.double())
   
   cv_df <- tibble(
     Accuracy = paste0(acc_mean, "% ± ", acc_sd, "%"),
