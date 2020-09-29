@@ -433,7 +433,6 @@ lr_model_final_wrist_chest <- train(label ~ sd_EDA + sd_EDA_wrist + sd_Temp_ches
                                     method = "glm",
                                     family ="binomial")
 ```
-$f_1$
 
 ```{r logistic-regression-metrics}
 final_wrist_lr_model_df <- calc_metrics(lr_model_final_wrist, test, 5)  %>% 
@@ -513,8 +512,6 @@ lr_model_final_wrist_chest_1Hz <- train(label ~ participant + sd_EDA + sd_EDA_wr
                                         family ="binomial")
 ```
 
-We also examine assumptions for a logistic regression model. We display binned residual plots for a subset of predictors, for both models. In general, the binned residual plots are not randomly dispersed about 0. This could be due to relatively high multicollinearity, especially with the $participant$ predictor and interactions between $participant$ and other engineered features. We had to include $participant$ in the model to correctly quantify uncertainty of our model coefficients. In addition, adding $participant$ addresses independence at the subject level, but each individual sample is not independent; presumably, a person's heart rate from one second ago affects their current heart rate. 
-
 ```{r }
 final_wrist_lr_model_df_1Hz <- calc_metrics(lr_model_final_wrist_1Hz, test_1Hz, 5) %>% 
   mutate(model = "Wrist Only")
@@ -530,6 +527,10 @@ bind_rows(final_wrist_lr_model_df_1Hz, final_wrist_chest_lr_model_df_1Hz) %>%
   add_header_above(c(" " = 1, "Cross Validation Data" = 3, "Test Data" = 3), escape = F)
 #vif(lr_model_final_wrist$finalModel) %>% kable()
 ```
+
+We also examine assumptions for a logistic regression model. We display binned residual plots for a subset of predictors, for both models. In general, the binned residual plots are not randomly dispersed about 0. This could be due to relatively high multicollinearity, especially with the $participant$ predictor and interactions between $participant$ and other engineered features. We had to include $participant$ in the model to correctly quantify uncertainty of our model coefficients. In addition, adding $participant$ addresses independence at the subject level, but each individual sample is not independent; presumably, a person's heart rate from one second ago affects their current heart rate. 
+
+
 
 
 ```{r eval=FALSE}
@@ -685,6 +686,18 @@ lr_model_final_wrist_coef_tidy_df %>%
   column_spec(column = c(2:4), latex_column_spec = "c") 
 ```
 
+```{r}
+lr_model_final_wrist_coef_tidy_df %>% 
+  filter(term %in% lr_model_final_wrist_coef_tidy_df$term[str_detect(lr_model_final_wrist_coef_tidy_df$term, "participant")] 
+) %>% 
+  mutate(rownum = c(1:14,  1:14)) %>% 
+  group_by(rownum) %>% 
+  mutate(sum = sum(estimate),
+         expsum = exp(sum)) %>% 
+  arrange(desc(expsum))
+```
+
+
 ### All Data Model 
 
 ```{r}
@@ -769,3 +782,19 @@ lr_model_final_wrist_chest_coef_tidy_df %>%
   column_spec(1, width = "4cm") %>% 
   column_spec(column = c(2:4), latex_column_spec = "c") 
 ```
+
+```{r}
+lr_model_final_wrist_chest_coef_tidy_df %>% 
+  filter(term %in% lr_model_final_wrist_chest_coef_tidy_df$term[str_detect(lr_model_final_wrist_chest_coef_tidy_df$term, "participant")] 
+) %>% 
+  mutate(rownum = c(1:14,  1:14, 1:14)) %>% 
+  group_by(rownum) %>% 
+  mutate(sum = sum(estimate),
+         expsum = exp(sum)) %>% 
+  arrange(desc(expsum)) %>% 
+  filter(row_number() %% 3 == 1)
+```
+
+
+
+
