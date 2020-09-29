@@ -168,7 +168,6 @@ calc_metrics = function(model, testing_data, folds) {
 ```
 
 
-
 ```{r full-logistic-model-d, eval=FALSE}
 lr_model_final_both <- train(label ~ participant + sd_EDA + sd_EDA_wrist + sd_Temp_chest + 
                                min_Temp_wrist + min_EMG + sd_inhale + sd_exhale + max_breath + 
@@ -197,114 +196,6 @@ car::vif(lr_model_final_both$finalModel)%>% round(2) %>% kable()
 car::vif(model)%>% round(2) %>% kable() 
 ```
 
-```{r random-forests, eval=FALSE}
-set.seed(20200922)
-forest_data <- all_data %>% 
-  subset(dplyr::select = -c(PANAS_Angry, PANAS_Irritated, SSSQ_Committed, SSSQ_Succeed, SSSQ_Motivated, SSSQ_Reflected, SSSQ_Concerned, SSSQ_Worried, Condition, PANAS_Sad))
-forest_data <- forest_data[1:(length(forest_data)-1)]
-forest_data <- forest_data %>%
-  mutate(participant = as.factor(participant),
-         Age = as.numeric(Age),
-         Hand = as.factor(`Dominant hand`),
-         Gender = as.factor(Gender),
-         Height = as.numeric(`Height (cm)`),
-         Weight = as.numeric(`Weight (kg)`))
-forest_data <- forest_data %>% 
-  subset(dplyr::select = -c(`Dominant hand`, `Height (cm)`, `Weight (kg)`))
-#idx = createDataPartition(forest_data$label, p = 0.8, list = FALSE)
-#train = forest_data[idx, ]
-#test = forest_data[-idx, ]
-#correlationMatrix <- cor(subset(forest_data, dplyr::select = -c(Gender, Hand, participant, label)))
-#highlyCorrelated <- findCorrelation(correlationMatrix, cutoff=0.5, verbose = FALSE)
-require(caTools)
-# full_rf <- randomForest(
-#   label ~ .,
-#   data=train
-# )
-# 
-# round(importance(full_rf), 2)
-# 
-# pred = predict(full_rf, newdata=test)
-# cm=table(test$label, pred)
-# cm
-# 
-# select_rf <- randomForest(
-#   label ~ participant + mean_EDA + sd_EDA + min_EDA + max_EDA + mean_EDA_wrist + sd_EDA_wrist + min_EDA_wrist + max_EDA_wrist + range_EDA_wrist + min_EMG + range_EMG + mean_Temp_chest + min_Temp_chest + max_Temp_chest + mean_Temp_wrist + min_Temp_wrist + max_Temp_wrist + mean_exhale + max_resp + max_breath + mean_chest_ACC_X +mean_chest_ACC_Y + mean_chest_ACC_Z + mean_chest_ACC_sum + sd_chest_ACC_X + sd_chest_ACC_Y + sd_chest_ACC_Z + sd_chest_ACC_sum + peak_chest_ACC_X + peak_chest_ACC_Y + peak_chest_ACC_Z + mean_ACC_chest_mag + sd_ACC_chest_mag + mean_wrist_ACC_X + mean_wrist_ACC_Y + mean_wrist_ACC_Z + mean_wrist_ACC_sum + sd_wrist_ACC_X + sd_wrist_ACC_Y + sd_wrist_ACC_Z + sd_wrist_ACC_sum + peak_wrist_ACC_X + peak_wrist_ACC_Y + peak_wrist_ACC_Z + sd_ACC_wrist_mag + PANAS_Active + PANAS_Distressed + PANAS_Interested + PANAS_Inspired + PANAS_Annoyed + PANAS_Strong + PANAS_Guilty + PANAS_Scared + PANAS_Hostile + PANAS_Excited + PANAS_Proud + PANAS_Irritable + PANAS_Enthusiastic + PANAS_Ashamed + PANAS_Alert + PANAS_Nervous + PANAS_Determined + PANAS_Attentive + PANAS_Jittery + PANAS_Afraid + PANAS_Stressed + PANAS_Frustrated + PANAS_Happy + STAI_At_Ease + STAI_Nervous + STAI_Jittery + STAI_Relaxed + STAI_Worried + STAI_Pleasant + SAM_Valence + SAM_Arousal + Age + Gender+ Height + Weight, data=train)
-# round(importance(select_rf), 2)
-# 
-# pred = predict(select_rf, newdata=test)
-# cm=table(test$label, pred)
-# cm
-# 
-# sparse_rf <- randomForest(
-#   label ~ PANAS_Stressed, data=train)
-# round(importance(sparse_rf), 2)
-# pred = predict(sparse_rf, newdata=test)
-# cm=table(test$label, pred)
-# cm
-# 
-# all_no_survey_rf <- randomForest(
-#   label ~ participant + mean_EDA + sd_EDA + min_EDA + max_EDA + range_EDA + mean_EDA_wrist + sd_EDA_wrist + min_EDA_wrist + max_EDA_wrist + range_EDA_wrist + mean_EMG + sd_EMG + max_EMG + min_EMG + range_EMG + mean_Temp_chest + sd_Temp_chest + min_Temp_chest + max_Temp_chest + range_Temp_chest + mean_Temp_wrist + sd_Temp_wrist + min_Temp_wrist + max_Temp_wrist + range_Temp_wrist + mean_inhale + sd_inhale + mean_exhale + sd_exhale + min_resp + max_resp + range_resp + mean_breath + sd_breath + min_breath + max_breath + range_breath + mean_chest_ACC_X + mean_chest_ACC_Y + mean_chest_ACC_Z + mean_chest_ACC_sum + sd_chest_ACC_X + sd_chest_ACC_Y + sd_chest_ACC_Z + sd_chest_ACC_sum + peak_chest_ACC_X + peak_chest_ACC_Y + peak_chest_ACC_Z + mean_ACC_chest_mag + sd_ACC_chest_mag + mean_wrist_ACC_X + mean_wrist_ACC_Y + mean_wrist_ACC_Z + mean_wrist_ACC_sum + sd_wrist_ACC_X + sd_wrist_ACC_Y + sd_wrist_ACC_Z + sd_wrist_ACC_sum + peak_wrist_ACC_X + peak_wrist_ACC_Y + peak_wrist_ACC_Z + sd_ACC_wrist_mag + mean_heart_rate_wrist_BVP + sd_heart_rate_wrist_BVP + mean_heart_rate_variability_wrist_BVP + sd_heart_rate_variability_wrist_BVP + rms_heart_rate_variability_wrist_BVP +  mean_heart_rate_chest_ECG + sd_heart_rate_chest_ECG + mean_heart_rate_variability_chest_ECG + sd_heart_rate_variability_chest_ECG + rms_heart_rate_variability_chest_ECG + i_e_ratio + Age + Gender+ Height + Hand + Weight, data=train)
-# round(importance(all_no_survey_rf), 2)
-# 
-# pred = predict(all_no_survey_rf, newdata=test)
-# cm=table(test$label, pred)
-# cm
-sparse_no_survey_rf <- randomForest(
-  label ~ participant +  max_EDA_wrist + sd_ACC_chest_mag, data=train)
-round(importance(sparse_no_survey_rf), 2)
-pred = predict(sparse_no_survey_rf, newdata=test)
-cm=table(test$label, pred)
-cm
-misclass_rate = (64+27)/(4339+64+27+7888)
-misclass_rate
-print(sparse_no_survey_rf)
-wrist_rf <- randomForest(
-  label ~ participant + min_EDA_wrist + max_EDA_wrist + range_EDA_wrist + sd_wrist_ACC_Z, data=train)
-round(importance(wrist_rf), 2)
-pred = predict(wrist_rf, newdata=test)
-cm=table(test$label, pred)
-cm
-misclass_rate = (5+20)/(4398+5+20+7895)
-misclass_rate
-```
-
-```{r cv-random-forest,  eval=FALSE}
-if (file.exists('sparse_no_survey_rf')) {
-  load(file = 'sparse_no_survey_rf')
-} else {
-  sparse_no_survey_rf <- train(
-    label ~ participant +  max_EDA_wrist + sd_ACC_chest_mag, data=train,
-    trControl = train_control, method = "rf"
-  )
-  save(sparse_no_survey_rf, file = 'sparse_no_survey_rf')
-}
-calc_metrics(sparse_no_survey_rf, test, 5)
-if (file.exists('wrist_rf')) {
-  load(file = 'wrist_rf')
-} else {
-  wrist_rf <- train(
-    label ~ participant + min_EDA_wrist + max_EDA_wrist + range_EDA_wrist + sd_wrist_ACC_Z, data=train,
-    trControl = train_control, method = "rf")
-  save(sparse_no_survey_rf, file = 'wrist_rf')
-}
-calc_metrics(wrist_rf, test, 5)
-```
-
-```{r Hierarchal Model, eval=FALSE}
-# Fixed Effects (survey & subdata variables)
-survey_var<- paste(colnames(survey))
-sub_var <- paste(colnames(sub_data))
-fixed_var <- c(survey_var, sub_var)
-fixed_var <- fixed_var[-c(2,37:42)] # removed missing SSSQ variables because of NA
-# Random Effects (wearable variables)
-wearable_var <- paste ("(1|",colnames(final_data)[-c(1,2)], ")")
-# Formula
-mlm_formula <- as.formula(paste("as.numeric(label) ~ participant + ", paste(wearable_var[c(9,50)], collapse= "+")))
-mlm <- lmer(mlm_formula, data = train, REML=FALSE,control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.rankZ = "ignore", check.nobs.vs.nRE="ignore", optimizer ="Nelder_Mead", ))
-summary(mlm)
-stepAIC(mlm, direction = "backward", trace = TRUE, data = train)
-```
 
 # Introduction 
 
@@ -623,11 +514,87 @@ Since it appears that the wrist wearable is sufficient for detecting stress vers
 
 ## Random Forest Model
 
+```{r random-forests, eval=FALSE}
+set.seed(20200922)
+forest_data <- all_data %>% 
+  subset(dplyr::select = -c(PANAS_Angry, PANAS_Irritated, SSSQ_Committed, SSSQ_Succeed, SSSQ_Motivated, SSSQ_Reflected, SSSQ_Concerned, SSSQ_Worried, Condition, PANAS_Sad))
+forest_data <- forest_data[1:(length(forest_data)-1)]
+forest_data <- forest_data %>%
+  mutate(participant = as.factor(participant),
+         Age = as.numeric(Age),
+         Hand = as.factor(`Dominant hand`),
+         Gender = as.factor(Gender),
+         Height = as.numeric(`Height (cm)`),
+         Weight = as.numeric(`Weight (kg)`))
+forest_data <- forest_data %>% 
+  subset(dplyr::select = -c(`Dominant hand`, `Height (cm)`, `Weight (kg)`))
+idx = createDataPartition(forest_data$label, p = 0.8, list = FALSE)
+train = forest_data[idx, ]
+test = forest_data[-idx, ]
+correlationMatrix <- cor(subset(forest_data, dplyr::select = -c(Gender, Hand, participant, label)))
+highlyCorrelated <- findCorrelation(correlationMatrix, cutoff=0.5, verbose = FALSE)
+require(caTools)
+
+sparse_no_survey_rf <- randomForest(
+  label ~ participant +  max_EDA_wrist + sd_ACC_chest_mag, data=train)
+round(importance(sparse_no_survey_rf), 2)
+pred = predict(sparse_no_survey_rf, newdata=test)
+cm=table(test$label, pred)
+cm
+misclass_rate = (64+27)/(4339+64+27+7888)
+misclass_rate
+
+wrist_rf <- randomForest(
+  label ~ participant + min_EDA_wrist + max_EDA_wrist + range_EDA_wrist + sd_wrist_ACC_Z, data=train)
+round(importance(wrist_rf), 2)
+pred = predict(wrist_rf, newdata=test)
+cm=table(test$label, pred)
+cm
+misclass_rate = (5+20)/(4398+5+20+7895)
+misclass_rate
+```
+
+```{r cv-random-forest,  eval=FALSE}
+if (file.exists('sparse_no_survey_rf')) {
+  load(file = 'sparse_no_survey_rf')
+} else {
+  sparse_no_survey_rf <- train(
+    label ~ participant +  max_EDA_wrist + sd_ACC_chest_mag, data=train,
+    trControl = train_control, method = "rf"
+  )
+  save(sparse_no_survey_rf, file = 'sparse_no_survey_rf')
+}
+calc_metrics(sparse_no_survey_rf, test, 5)
+if (file.exists('wrist_rf')) {
+  load(file = 'wrist_rf')
+} else {
+  wrist_rf <- train(
+    label ~ participant + min_EDA_wrist + max_EDA_wrist + range_EDA_wrist + sd_wrist_ACC_Z, data=train,
+    trControl = train_control, method = "rf")
+  save(sparse_no_survey_rf, file = 'wrist_rf')
+}
+calc_metrics(wrist_rf, test, 5)
+```
+
 In addition to the logistic regression, we also fit several other types of models. The first of those was a random forest model. We built a random forest model using all of our data and just the wrist data, and had great overall performance for both. Our model built with all the data consisted of only three predictors: participant ID, max wrist electrodermal activity, and magnitude of standard deviation of chest movement, and it had a misclassification rate of 0.74%. The model built using only wrist data used five predictors, which included participant ID, minimum electrodermal activity, maximum electrodermal activity, the range of electrodermal activity, and standard deviation of Z-plane movement, and it had an even lower misclassification rate of 0.002%. 
 
 Despite the great performance of these models, we opted to go with the logistic regression as our final model since interpretability was important to the goals of the case study. Random forest is great for prediction, however it is difficult to interpret how exactly the predictors affect the response. Therefore, we were willing to sacrifice a little bit of accuracy in order to make more concrete conclusions about how our predictor variables affected stress and amusement.
 
 ## Multilevel Model
+```{r Hierarchal Model, eval=FALSE}
+# Fixed Effects (survey & subdata variables)
+survey_var<- paste(colnames(survey))
+sub_var <- paste(colnames(sub_data))
+fixed_var <- c(survey_var, sub_var)
+fixed_var <- fixed_var[-c(2,37:42)] # removed missing SSSQ variables because of NA
+# Random Effects (wearable variables)
+wearable_var <- paste ("(1|",colnames(final_data)[-c(1,2)], ")")
+# Formula
+mlm_formula <- as.formula(paste("as.numeric(label) ~ participant + ", paste(wearable_var[c(9,50)], collapse= "+")))
+mlm <- lmer(mlm_formula, data = train, REML=FALSE,control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.rankZ = "ignore", check.nobs.vs.nRE="ignore", optimizer ="Nelder_Mead", ))
+summary(mlm)
+stepAIC(mlm, direction = "backward", trace = TRUE, data = train)
+```
 
 # Appendix 
 
