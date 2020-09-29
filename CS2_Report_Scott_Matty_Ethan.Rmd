@@ -72,7 +72,7 @@ sub_data <- readRDS("subj_df.Rds")
 survey <- survey %>%
   rename(label = Label)
 sub_data <- sub_data %>%
-  rename(participant = Participant) %>% 
+  rename(participant = Participant) %>%
   mutate(`Dominant hand` = as.factor(`Dominant hand`),
          Gender = as.factor(Gender),
          `Height (cm)` = as.double(`Height (cm)`),
