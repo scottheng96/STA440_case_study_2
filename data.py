@@ -9,7 +9,7 @@ def flatten(listOfLists):
 files = ['S10', 'S11', 'S13', 'S14', 'S15', 'S16', 'S17', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9']
 
 path = "/hpc/group/sta440-f20/WESAD/WESAD"
-output_path = "/hpc/group/sta440-f20/es321/output_data"
+
 #output_path = "/hpc/group/sta440-f20/sdh45/output_data"
 def get_chest_pickle(file_list):
     for file in file_list:
