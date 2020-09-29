@@ -1,7 +1,7 @@
 library(tidyverse)
 
 id <- c('S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S13', 'S14', 'S15', 'S16', 'S17')
-chest_files <- paste0(id, "_chest.csv")
+chest_files <- paste0("./output_data/",id, "_chest.csv")
 wrist_files <- paste0(id, "_wrist.csv")
 
 all_data = data_frame() # had total of 347372 samples, after downsampling to 4Hz, still kept all labels 0-7
