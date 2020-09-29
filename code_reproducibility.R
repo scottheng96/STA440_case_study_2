@@ -125,23 +125,27 @@ lr_model_final_wrist_chest <- train(label ~ sd_EDA + sd_EDA_wrist + sd_Temp_ches
                                     data = train, trControl = train_control, 
                                     method = "glm",
                                     family ="binomial")
-
+goal_colnames <- c("Train Accuracy",
+                   "Train F1 Score",
+                   "Train AUC",
+                   "Test Accuracy",
+                   "Test F1 Score",
+                   "Test AUC", 
+                   "Model")
 final_wrist_lr_model_df <- calc_metrics(lr_model_final_wrist, test, 5)  %>% 
-  mutate(Model = "Wrist Only") %>% 
-  rename("Train Accuracy"= `Accuracy...1`,
-         "Train F1 Score" = `F1...2`,
-         "Train AUC"  = `AUC...3`,
-         "Test Accuracy" = `Accuracy...4`,
-         "Test F1 Score" = `F1...5`,
-         "Test AUC" = `AUC...6`)
+  mutate(Model = "Wrist Only") 
+colnames(final_wrist_lr_model_df) <- goal_colnames
+
+  # rename("Train Accuracy"= `Accuracy...1`,
+  #        "Train F1 Score" = `F1...2`,
+  #        "Train AUC"  = `AUC...3`,
+  #        "Test Accuracy" = `Accuracy...4`,
+  #        "Test F1 Score" = `F1...5`,
+  #        "Test AUC" = `AUC...6`)
 final_wrist_chest_lr_model_df <- calc_metrics(lr_model_final_wrist_chest, test, 5) %>% 
-  mutate(Model = "Chest & Wrist")%>% 
-  rename("Train Accuracy"= `Accuracy...1`,
-         "Train F1 Score" = `F1...2`,
-         "Train AUC"  = `AUC...3`,
-         "Test Accuracy" = `Accuracy...4`,
-         "Test F1 Score" = `F1...5`,
-         "Test AUC" = `AUC...6`)
+  mutate(Model = "Chest & Wrist")
+colnames(final_wrist_chest_lr_model_df) <- goal_colnames
+
 
 print("These are the values for the 1st and 4th goals. These values can be found in Table 2, under section 5, Results, in the final report.")
 print("The first row outputs metrics for the chest & wrist model, and the second row outputs metrics for the wrist model. These metrics were created by performing 5-fold Cross Validation on the training data, which was created using a 80/20 split.")
