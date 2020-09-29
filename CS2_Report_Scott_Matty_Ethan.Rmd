@@ -42,6 +42,7 @@ pkgTest("cvms")
 pkgTest("grid")
 pkgTest("gridExtra")
 pkgTest("arm")
+pkgTest("cowplot")
 ```
 
 ```{r include=FALSE}
@@ -60,6 +61,7 @@ library(boot)
 library(cvms)
 library(grid)
 library(gridExtra)
+library(cowplot)
 knitr::opts_chunk$set(echo = FALSE,
                       message = FALSE,
                       warning = FALSE)
@@ -421,15 +423,16 @@ bind_rows(final_wrist_lr_model_df_1Hz, final_wrist_chest_lr_model_df_1Hz) %>%
 aug_wrist <- augment(lr_model_final_wrist$finalModel, type.predict = "response", 
                      type.residuals = "deviance")
 
-arm::binnedplot(x=aug_wrist$.fitted,y=aug_wrist$.resid,xlab="Predicted Probabilities", 
+p1 <- arm::binnedplot(x=aug_wrist$.fitted,y=aug_wrist$.resid,xlab="Predicted Probabilities", 
                 main = "Binned Residual vs. Predicted Values")
 
 aug_chest_wrist <- augment(lr_model_final_wrist_chest$finalModel, type.predict = "response", 
                      type.residuals = "deviance")
 
-arm::binnedplot(x=aug_chest_wrist$.fitted,y=aug_chest_wrist$.resid,xlab="Predicted Probabilities", 
+p2 <- arm::binnedplot(x=aug_chest_wrist$.fitted,y=aug_chest_wrist$.resid,xlab="Predicted Probabilities", 
                 main = "Binned Residual vs. Predicted Values")
 
+plot_grid(p1, p2, ncol = 2, nrow = 1)
 ```
 
 
@@ -505,6 +508,11 @@ It is also interesting to note that in the model built with chest and wrist data
 
 ## Quantifying Heterogeneity 
 
+In the wrist only model, when compared to the baseline S10 and holding all else constant, we expect the odds of being  stressed for S17 to multiply by exp(0.256), while we expect the odds of being stressed for S7 to multiply by exp(-5.765) and the odds of being stressed for S3 to multiply by exp(-4.34).
+For the  sdWACC, when compared to the baseline S10 and holding all else constant,  as SD of ACC magnitude increases by one unit, we expect the odds of being stressed for S7 to multiply by exp(10.803) more and the odds of being stressed for S5 to multiply by exp(6.297) more. 
+In the all data model, when compared to the baseline S10 and holding all else constant, we expect the odds of being stressed for S8 to multiply by exp(0.413) and the odds of being stressed for S15 to multiply by exp(0.178), while we  expect the odds of being stressed for the other 12 subjects to multiply by a value less than 1. 
+For the sdCHR, when compared to the baseline S10 and holding all else constant, as HR increases by one unit, we expect the odds of being stressed for S11 to multiply by exp(13.179) more and the odds of being  stressed for S17 to multiply by exp(8.979) more; conversely, as HR increases by one unit, we expect the odds of being stressed for S8 to multiply by exp(-4.834).
+Although some variation between subjects is expected, within both models, we see large variability among the odds of being stressed. These results indicate that there is heterogeneity across individuals’ responses to stress vs. amusement. Overall, although we only see the differences between S10 vs. other subjects (but not S2 vs. S3 for example), the disparity in the odds of being stressed across the 15 participants is pretty apparent. This could also be due to model instability or a small number of participants - a larger pool of participants could reduce heterogeneity and variability between the estimates. 
 
 
 # Conclusion 
