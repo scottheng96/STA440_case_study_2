@@ -509,9 +509,12 @@ It is also interesting to note that in the model built with chest and wrist data
 ## Quantifying Heterogeneity 
 
 In the wrist only model, when compared to the baseline S10 and holding all else constant, we expect the odds of being  stressed for S17 to multiply by exp(0.256), while we expect the odds of being stressed for S7 to multiply by exp(-5.765) and the odds of being stressed for S3 to multiply by exp(-4.34).
+
 For the  sdWACC, when compared to the baseline S10 and holding all else constant,  as SD of ACC magnitude increases by one unit, we expect the odds of being stressed for S7 to multiply by exp(10.803) more and the odds of being stressed for S5 to multiply by exp(6.297) more. 
+
 In the all data model, when compared to the baseline S10 and holding all else constant, we expect the odds of being stressed for S8 to multiply by exp(0.413) and the odds of being stressed for S15 to multiply by exp(0.178), while we  expect the odds of being stressed for the other 12 subjects to multiply by a value less than 1. 
 For the sdCHR, when compared to the baseline S10 and holding all else constant, as HR increases by one unit, we expect the odds of being stressed for S11 to multiply by exp(13.179) more and the odds of being  stressed for S17 to multiply by exp(8.979) more; conversely, as HR increases by one unit, we expect the odds of being stressed for S8 to multiply by exp(-4.834).
+
 Although some variation between subjects is expected, within both models, we see large variability among the odds of being stressed. These results indicate that there is heterogeneity across individuals’ responses to stress vs. amusement. Overall, although we only see the differences between S10 vs. other subjects (but not S2 vs. S3 for example), the disparity in the odds of being stressed across the 15 participants is pretty apparent. This could also be due to model instability or a small number of participants - a larger pool of participants could reduce heterogeneity and variability between the estimates. 
 
 
@@ -519,6 +522,8 @@ Although some variation between subjects is expected, within both models, we see
 
 While we were able to distinguish between stress and amusement conditions fairly well with our model, it is worth pointing out some limitations. First, we only had data for the 15 participants in this study, and participant ID is an important predictor in our models, so we are unable to generalize the likelihood of being stressed or amused to the people in the population. Also, since all of the data was collected in one sitting during an experiment, our data is very highly correlated and  suggests there is heterogeneity across individuals’ responses to stress vs. amusement. We can distinguish between stress and amusement in this controlled laboratory setting, but we can't generalize about the differences in these emotions in a person's day-to-day life, or what stress and amusement might even look like if the measurements were taken on a different day.
 Since it appears that the wrist wearable is sufficient for detecting stress versus amusement in the laboratory setting, further research could study wrist data for individuals over a long time period, perhaps a day or even a week, and see if different emotions are still distinguishable. Also, studies could be done with a larger random sample of individuals to try and see if there are any findings about stressed versus amused physiological responses generalizable to all individuals instead of just at the participant level. 
+
+# Appendix
 
 ## Random Forest Model
 
@@ -604,9 +609,7 @@ summary(mlm)
 stepAIC(mlm, direction = "backward", trace = TRUE, data = train)
 ```
 
-# Appendix 
-
-## Bibliography
+# Bibliography
 
 1. P. Schmidt et al. (2018). Introducing WESAD, a Multimodal Dataset for Wearable Stress and Affect Detection. Proceedings of the 2018 on International Conference on Multimodal Interaction - ICMI 18.
 
@@ -637,7 +640,7 @@ calc_metrics(rf_model_final_wrist, test, 5)
 varImp(rf_model_final_wrist$finalModel)
 ```
 
-##  Model Output
+#  Model Output
 
 ### Wrist Data Model 
 
