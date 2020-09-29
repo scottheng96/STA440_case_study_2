@@ -388,32 +388,35 @@ We then calculated the mean, standard deviation, maximum, minimum and range of A
 
 ```{r}
 features_tbl <- data.frame(
-  Metric = c(rep("Chest ACC", 1), rep("Chest ECG", 1), rep("Chest EDA",2), rep("Chest EMG",2), "Chest Resp", "Chest Temp", 
+  Metric = c(rep("Chest ACC", 1), rep("Chest ECG", 1), rep("Chest EDA",2), rep("Chest EMG",2), rep("Chest Resp",5), "Chest Temp", 
              "Wrist ACC", "Wrist BVP", "Wrist EDA", "Wrist Temp"),
   
-  Features = linebreak(c("Mean ($\\mu^C_{ACC, i}$), SD ($\\sigma^C_{ACC, i}$), i $\\in {x, y, z, 3D}$", 
-                         "Mean ($\\mu^C_{ECG}$), SD ($\\sigma^C_{ECG}$), Mean HRV ($\\mu^C_{HRV}$), SD HRV ($\\sigma^C_{HRV}$)", 
-                         "Mean ($\\mu^C_{EDA}$), SD ($\\sigma^C_{EDA}$), Min ($Min^C_{EDA}$)", 
-                         "Max ($Max^C_{EDA}$), Range ($Range^C_{EDA}$)", 
-                         "Mean ($\\mu^C_{EMG}$), SD ($\\sigma^C_{EMG}$), Min ($Min^C_{EMG}$)", 
-                         "Max ($Max^C_{EMG}$), Range ($Range^C_{EMG}$)", 
-                         "Mean Std Deviation", 
-                         "Mean ($\\mu^C_{T}$), SD ($\\sigma^C_{T}$), Min ($Min^C_{T}$), Max ($Max^C_{T}$), Range ($Range^C_{T}$)", 
-                         "Mean ($\\mu^W_{ACC}$), SD ($\\sigma^W_{ACC}$)", 
-                         "Mean Std Deviation Heart Rate Variability", 
-                         "Mean ($\\mu^W_{EDA}$), SD ($\\sigma^W_{EDA}$), Min ($Min^W_{EDA}$), Max ($Max^W_{EDA}$), Range ($Range^C_{EDA}$)", 
-                         "Mean ($\\mu^W_{T}$), SD ($\\sigma^W_{T}$), Min ($Min^W_{T}$), Max ($Max^W_{T}$), Range ($Range^W_{T}$)"))
+  Features = linebreak(c("Mean ($\\mu^C_{ACC}$), SD ($\\sigma^C_{ACC}$)", 
+               "Mean ($\\mu^C_{ECG}$), SD ($\\sigma^C_{ECG}$), Mean HRV ($\\mu^C_{HRV}$), SD HRV ($\\sigma^C_{HRV}$)", 
+               "Mean ($\\mu^C_{EDA}$), SD ($\\sigma^C_{EDA}$), Min ($Min^C_{EDA}$)", 
+               "Max ($Max^C_{EDA}$), Range ($Range^C_{EDA}$)", 
+               "Mean ($\\mu^C_{EMG}$), SD ($\\sigma^C_{EMG}$), Min ($Min^C_{EMG}$)", 
+               "Max ($Max^C_{EMG}$), Range ($Range^C_{EMG}$)", 
+               "Mean ($\\mu^C_{inhale}$), SD ($\\sigma^C_{inhale}$)", "Mean ($\\mu^C_{exhale}$), SD ($\\sigma^C_{exhale}$)",
+               "Min ($Min^C_{resp}$), Max ($Max^C_{resp}$), Range ($Range^C_{resp}$)", 
+               "Mean ($\\mu^C_{breath}$), SD ($\\sigma^C_{breath}$), Min ($Min^C_{breath}$)", 
+               "Max ($Max^C_{breath}$), Range ($Range^C_{breath}$), I/E Ratio", 
+               "Mean ($\\mu^C_{T}$), SD ($\\sigma^C_{T}$), Min ($Min^C_{T}$), Max ($Max^C_{T}$), Range ($Range^C_{T}$)", 
+               "Mean ($\\mu^W_{ACC}$), SD ($\\sigma^W_{ACC}$)", 
+               "Mean ($\\mu^W_{ECG}$), SD ($\\sigma^W_{ECG}$), Mean HRV ($\\mu^W_{HRV}$), SD HRV ($\\sigma^W_{HRV}$)", 
+               "Mean ($\\mu^W_{EDA}$), SD ($\\sigma^W_{EDA}$), Min ($Min^W_{EDA}$), Max ($Max^W_{EDA}$), Range ($Range^C_{EDA}$)", 
+               "Mean ($\\mu^W_{T}$), SD ($\\sigma^W_{T}$), Min ($Min^W_{T}$), Max ($Max^W_{T}$), Range ($Range^W_{T}$)"))
 )
 
 features_tbl %>% 
   kable(escape=F,   booktabs = T, align = "c",
         caption = "Summary of Sensor Data Categories, with the Extracted Predictors and Respective Symbols",) %>%
   kable_styling(latex_options = c("hold_position")) %>% 
-  group_rows(index = c("Chest Sensor Data" = 8, "Wrist Sensor Data" = 4)) %>%
+  group_rows(index = c("Chest Sensor Data" = 11, "Wrist Sensor Data" = 5)) %>%
   #column_spec(1, bold=T) %>%
   collapse_rows(columns = 1, latex_hline = "major") %>% 
-  row_spec(0, bold = TRUE) %>% 
-  column_spec(column = c(2), latex_column_spec = "c")
+  row_spec(0, bold = TRUE) #%>% 
+  #column_spec(column = c(2), latex_column_spec = "c")
 ```
 
 
