@@ -42,7 +42,7 @@ pkgTest("cvms")
 pkgTest("grid")
 pkgTest("gridExtra")
 pkgTest("arm")
-pkgTest("cowplot")
+pkgTest("psych")
 ```
 
 ```{r include=FALSE}
@@ -61,7 +61,7 @@ library(boot)
 library(cvms)
 library(grid)
 library(gridExtra)
-library(cowplot)
+library(psych)
 knitr::opts_chunk$set(echo = FALSE,
                       message = FALSE,
                       warning = FALSE)
@@ -72,6 +72,7 @@ ggplot2::theme_set(new = theme_bw())
 survey <- read_csv("survey.csv")
 final_data <- readRDS("final_data.Rds")
 sub_data <- readRDS("subj_df.Rds")
+raw_data <- readRDS("chest_and_wrist.Rds")
 survey <- survey %>%
   rename(label = Label)
 sub_data <- sub_data %>%
@@ -205,9 +206,85 @@ Affect recognition seeks to detect a person’s affective state. One of these st
 
 # Data 
 
-For this study, we utilized the Wearable Stress and Affect Detection dataset that contains 63 million samples of raw physiological and motion signal data collected from 15 test subjects. The data was collected using 2 devices: a chest-worn device (RespiBAN) and a wrist-worn device (Empatica E4). The RespiBAN chest data includes electrocardiography (ECG) data in mV, electrodermal activity (EDA) in microseconds, electromyography (EMG) data in mV, skin temperature (TEMP) in °C, displacement of the thorax for males and the abdomen for females induced by inhaling or exhaling (RESP) as a percentage, and 3-axis accelerometer (ACC) data in g - the acceleration of gravity. All RespiBAN data were all recorded at 700 Hz. The E4 wrist data collected includes blood volume pulse (BVP) data (64Hz), ACC data (32Hz), EDA in microseconds (4Hz), and TEMP in °C (4Hz). Each sample also references a label corresponding to the study protocol condition, with each label referring to a different condition (1-baseline, 2-stress, 3-amusement, 4-meditation). These conditions were recorded by having participants exposed to sources of stimulation that would elicit the desired condition. The labels 0, 5, 6, 7  indicate that the data should be ignored. The dataset also included information about each subject, such as height, weight and age, as well as personal responses to PANAS [[2]][Bibliography] and SSSQ questionnaires.
+```{r}
+# includes all the plots in the EDA
+EDA_wrist_eng_df <- data %>% dplyr::select(participant, label, mean_EDA_wrist:range_EDA_wrist) 
 
-Considering the nature of the WESAD dataset and the scope of our study, we decided to filter out samples that did not represent stress or amusement, and standardized sampling rates for all RespiBAN and E4 variables to 4Hz. This not only improved the quality of our dataset but also allowed for more feasible computation with a dataset of reasonable size and standardized windows for multiple variables.
+raw_data_mod <- raw_data[!(raw_data$Label==1),]
+
+# chest EDA
+chest_EDA <- raw_data_mod %>% 
+  mutate(row = row_number()) %>% 
+  ggplot(aes(x = row, y = EDA, color = as.factor(Label))) + 
+  geom_line() + 
+  scale_x_discrete(labels = abbreviate) +
+  labs(title = "Chest EDA vs Time by Participant", x="Time", y="EDA (RespiBAN)", caption = "Fig 1.1 Plot of RespiBAN (Chest) EDA samples collected over \n time by participant and label (2- stress, 3-amusement)") +
+  theme(plot.title = element_text(hjust = 0.5), , plot.caption = element_text(hjust = 0.5)) +
+  facet_wrap(Participant~. ,  scales = "free")
+
+# wrist EDA
+wrist_EDA <- raw_data_mod %>% 
+  mutate(row = row_number()) %>% 
+  ggplot(aes(x = row, y = EDA_wrist, color = as.factor(Label))) + 
+  geom_line() + 
+  scale_x_discrete(labels = abbreviate) +
+  labs(title = "Wrist EDA vs Time by Participant", x="Time", y="EDA (E4)", caption = "Fig 1.2 Plot of E4 (Wrist) EDA samples collected over time by \n participant and label (2- stress, 3-amusement)") +
+  theme(plot.title = element_text(hjust = 0.5), , plot.caption = element_text(hjust = 0.5)) +
+  facet_wrap(Participant~. ,  scales = "free")
+
+# ACC plots
+data_mod <- data[!(data$label==1),]
+
+peak_wrist_ACC_Z_plot <- ggplot(data_mod, aes(peak_wrist_ACC_Z, color = as.factor(label))) + 
+  geom_histogram(bindwith=30) +
+  labs(title = "Histogram of Peak Wrist ACC Z samples by Participant", y="Count",x = "Peak Wrist ACC Z", caption = "Fig 2.1 Histogram of peak acc wrist samples  \n by participant and label (2- stress, 3-amusement)") +
+  theme(plot.title = element_text(hjust = 0.5), , plot.caption = element_text(hjust = 0.5)) +
+  facet_wrap(~participant)
+
+mean_ACC_chest_mag_plot <- ggplot(data_mod, aes(mean_ACC_chest_mag, color = as.factor(label))) +
+  geom_histogram(bindwith=30) +
+  labs(title = "Histogram of Mean ACC Chest Mag samples by Participant", y="Count", x = "Mean ACC Chest Mag", caption = "Fig 2.2 Histogram of mean acc chest \n magnitude samples by participant and label (2- stress, 3-amusement)") +
+  theme(plot.title = element_text(hjust = 0.5), plot.caption = element_text(hjust = 0.5)) +
+  facet_wrap(~participant)
+
+panel.cor <- function(x, y, ...)
+{
+par(usr = c(0, 1, 0, 1))
+txt <- as.character(format(cor(x, y), digits=2))
+text(0.5, 0.5, txt, cex = 6* abs(cor(x, y)))
+}
+```
+
+For this study, we utilized the Wearable Stress and Affect Detection dataset that contains 63 million samples of raw physiological and motion signal data collected from 15 test subjects [[1]]. The data was collected using 2 devices: a chest-worn device (RespiBAN) and a wrist-worn device (Empatica E4). The RespiBAN chest data includes electrocardiography (ECG) data in mV, electrodermal activity (EDA) in microseconds, electromyography (EMG) data in mV, skin temperature (TEMP) in °C, displacement of the thorax for males and the abdomen for females induced by inhaling or exhaling (RESP) as a percentage, and 3-axis accelerometer (ACC) data in g - the acceleration of gravity. All RespiBAN data were all recorded at 700 Hz. The E4 wrist data collected includes blood volume pulse (BVP) data (64Hz), ACC data (32Hz), EDA in microseconds (4Hz), and TEMP in °C (4Hz). Each sample also references a label corresponding to the study protocol condition, with each label referring to a different condition (1- baseline, 2- stress, 3- amusement, 4- meditation). These conditions were recorded by having participants exposed to sources of stimulation that would elicit the desired condition. The labels 0, 5, 6, 7  indicate that the data should be ignored. The dataset also included information about each subject, such as height, weight and age, as well as personal responses to PANAS and SSSQ questionnaires.
+
+Considering the nature of the WESAD dataset and the scope of our study, we decided to filter out samples that did not represent stress or amusement, and standardized sampling rates for all RespiBAN and E4 variables to 4Hz. This not only improved the quality of our dataset but also allowed for more feasible computation with a dataset of reasonable size and standardized windows for multiple variables. 
+
+```{r fig.width = 12,fig.height = 4}
+gridExtra::grid.arrange(chest_EDA, wrist_EDA, ncol=2)
+```
+
+For example, Figure 1.1 and 1.2 show plots of the EDA signal data by participant and by condition (2-stress, 3-amusement), showing different values when the participant experienced different conditions, and this difference is captured both in the chest and wrist data. Since we only took samples for 2 conditions, we could desirably observe a relative equal distribution of samples in both groups. However, raw signal data only provides limited information and difficult interpretability, and therefore from these raw data signals, we performed data and domain-driven feature engineering to generate potential predictor variables for our model that were easily interpretable and well represented the information in the data. We generated x features, equally between all the raw signal variables.
+
+```{r fig.width = 12,fig.height = 4}
+gridExtra::grid.arrange(peak_wrist_ACC_Z_plot, mean_ACC_chest_mag_plot, ncol=2)
+```
+
+Performing exploratory data analysis on the engineered features provided more insightful information related to our study. For example, Figure x.x and x.x are histograms of Peak Wrist ACC Z and Mean ACC Chest Magnitude samples engineering from the raw signal ACC data. From these plots we can observe that these ACC feature values have different distributions based on the different conditions and could potentially be significant in predicting stress or amusement.
+
+```{r fig.width = 6,fig.height = 4, fit.title = "Correlation Matrix of features within one signal variable (EDA)", fig.cap="Fig. 3 showing the Correlation Matrix of features within one signal variable (EDA)"}
+# Correlation plots
+# wrist EDA correlation
+#can only be saved as png
+pairs.panels(EDA_wrist_eng_df[,-c(1,2)], 
+             method = "pearson", # correlation method
+             hist.col = "#00AFBB",
+             density = TRUE,  # show density plots
+             main = "Correlation Matrix of Features within EDA signal variable"
+             )
+```
+
+Other interesting insights like potential issues of multicollinearity were observed when plotting correlation matrices of the features. Figure 3 shows features engineered only from EDA and we can see that there exists a high level or collinearity. On the other hand, there was low correlation between features of different signal variables. High collinearity in predictor variables will influence the strategies and thresholds chosen for model selection and interaction effects, which we elaborate further in the paper in relation to our proposed model. 
+
 
 # Literature Review
 
@@ -497,6 +574,7 @@ We conduct sensitivity analysis by using 10-fold cross validation on our trainin
 # Discussion
 
 ## Interpretation of Predictors
+
 In our wrist-only model, the coefficients for standard deviation of wrist electrodermal activity, standard deviation of wrist acceleration, and standard deviation of wrist heart rate variability all suggest that the odds of being stressed increase as these measures increase. However, the negative interaction between standard deviation of wrist electrodermal activity and standard deviation of acceleration suggests that the odds of being stressed don't increase as much when these two measures increase together, holding heart rate variability constant. For a full list of these estimates, please see Table 3. Also, note that these estimates are in terms of the log-odds. 
 
 In the model built with both chest and wrist data, increases in chest standard deviation of electrodermal activity, wrist standard deviation of electrodermal activity, chest standard deviation of temperature, wrist minimum temperature, standard deviation of inhale, maximum breath cycle time, mean chest acceleration, standard deviation of chest acceleration, standard deviation of wrist acceleration, standard deviation of wrist heart rate, standard deviation of wrist heart rate variability, root mean square of wrist heart rate variability, and root mean square of chest heart rate variability all increase the odds that a person is stressed while holding other variables constant. On the other hand, increases in minimum chest electromyography, standard deviation of exhale, inhale/exhale ratio, and standard deviation of chest heart rate all lead to a decrease in the odds that a person is stressed, keeping other variables constant.  For a full list of these estimates, please see Table 4. Also, note that these estimates are in terms of the log-odds. 
@@ -504,6 +582,7 @@ In the model built with both chest and wrist data, increases in chest standard d
 In both models, standard deviation of wrist electrodermal activity has the largest estimate. In the wrist-only model, its estimate is 63.622, and in the wrist and chest model, it is 1993.249. This means that in the wrist model, we expect that an increase of 0.01 in the standard deviation of electrodermal activity will cause the odds that a person is stressed to multiply by $e^0.63622$, or 1.889 holding all else constant. In the wrist and chest model, we expect that the same increase of 0.01 in the standard deviation of wrist electrodermal activity will cause the odds that a person is stressed to multiply by $e^19.932$, or 453,492,822 holding all else constant. In this same model, keeping all other variables constant, a 0.01 increase in the standard deviation of chest electrodermal activity will cause the odds that a person is stressed to multiply by $e^0.283$, or 1.328. This suggests that small changes in the standard deviation of electrodermal activity can have very large impacts on the odds that a person is stressed versus amused. As this variability increases, it appears that a given participant is much more likely to be stressed.
 
 We also see a very large negative estimate for the interaction effect between the standard deviation of wrist electrodermal activity and minimum wrist temperature. The estimate of -57.13 implies that for a 0.01 increase in standard deviation of wrist electrodermal activity and an increase of 1 in minimum wrist temperature, we would expect the odds of being stressed versus amused to multiply by $e^{0.604 + 19.932 - 0.5713}$, or 468,567,160, keeping all other variables constant. 
+
 It is also interesting to note that in the model built with chest and wrist data, most of our predictors appear to be standard deviation measures, and in the wrist-only model, participant is the only non-standard deviation predictor. This observation suggests that the variability in physiological signals is a more important distinguisher of stress and amusement as opposed to the magnitude of these signals in many cases. 
 
 ## Quantifying Heterogeneity 
