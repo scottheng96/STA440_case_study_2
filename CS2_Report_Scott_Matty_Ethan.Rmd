@@ -339,7 +339,7 @@ There has also been research done on the appropriate time intervals to use when 
 
 As mentioned earlier, the brain takes .9 milliseconds to shift a body into a full stress response, which suggests that these data should be sampled at approximately 1111 Hz to properly identify a state of stress. However, the highest-resolution data is sampled at 700 Hz, which suggests that these data are not granular enough to fully capture a shift to stress. Thus, with computational cost in mind, we downsampled our data to 4Hz. We assigned a unique ID to each of the 15 subjects, and also added their personal characteristics. Since we are primarily interested in differentiating between stress and amusement, we only kept samples that were labeled 2 (stress) or 3 (amusement). We then relabeled amusement as 0 and stress as 1.   
 
-Next, we calculated features for the different modalities.  Segmentation of the physiological signals was done using a sliding window, with a window shift of 0.25 seconds. The ACC and physiological features were both extracted using a 5 second window size [[7]][Bibliography] [[8]][Bibliography]. 
+Next, we calculated features for the different modalities.  Segmentation of the physiological signals was done using a sliding window, with a window shift of 0.25 seconds. The ACC and physiological features were both extracted using a 5 second window size [[7]][Bibliography][[8]][Bibliography]. 
 
 To calculate the respiration variables, we had to separate out inhales and exhales. Inhale data corresponded to respiration values greater than zero and exhale data corresponded to respiration values less than zero. For five-second intervals where someone either did not inhale or exhale, we coded the corresponding observations to equal zero instead of NA. Additionally, we found total respiration range which took both inhale and exhale values into account when calculating the maximums and minimums. Next, we calculated the inhale to exhale ratio by dividing our mean inhale column by our mean exhale column. Since this would have produced some infinite values due to the fact that periods where someone was not exhaling were set to zero, we set these inhale/exhale ratios to equal 10. Additionally, we had a couple of intervals where the inhale/exhale ratio was very large, sometimes even greater than 1500. This was happening because some five-second windows in our data could have consisted of the participant inhaling for most of the time, thus we would be dividing by an extremely low exhale value. So, we re-coded any ratio greater than 10 to equal an upper bound of 10. This is a fair assumption, since it would not be physically possible for someone to inhale incredibly more than they exhale. We next calculated a breath rate by first summing the number of rows in one breath cycle, which is defined as one full inhale and one full exhale. Then, we took this sum and divided it by four, since the observations in our dataset were taken every quarter of a second, to get the time in seconds of one full breath cycle. 
 
@@ -352,30 +352,30 @@ features_tbl <- data.frame(
              "Wrist ACC", "Wrist BVP", "Wrist EDA", "Wrist Temp"),
   
   Features = linebreak(c("Mean ($\\mu^C_{ACC}$), SD ($\\sigma^C_{ACC}$)", 
-               "Mean ($\\mu^C_{ECG}$), SD ($\\sigma^C_{ECG}$), Mean HRV ($\\mu^C_{HRV}$), SD HRV ($\\sigma^C_{HRV}$)", 
-               "Mean ($\\mu^C_{EDA}$), SD ($\\sigma^C_{EDA}$), Min ($Min^C_{EDA}$)", 
-               "Max ($Max^C_{EDA}$), Range ($Range^C_{EDA}$)", 
-               "Mean ($\\mu^C_{EMG}$), SD ($\\sigma^C_{EMG}$), Min ($Min^C_{EMG}$)", 
-               "Max ($Max^C_{EMG}$), Range ($Range^C_{EMG}$)", 
-               "Mean ($\\mu^C_{inhale}$), SD ($\\sigma^C_{inhale}$)", "Mean ($\\mu^C_{exhale}$), SD ($\\sigma^C_{exhale}$)",
-               "Min ($Min^C_{resp}$), Max ($Max^C_{resp}$), Range ($Range^C_{resp}$)", 
-               "Mean ($\\mu^C_{breath}$), SD ($\\sigma^C_{breath}$), Min ($Min^C_{breath}$)", 
-               "Max ($Max^C_{breath}$), Range ($Range^C_{breath}$), I/E Ratio", 
-               "Mean ($\\mu^C_{T}$), SD ($\\sigma^C_{T}$), Min ($Min^C_{T}$), Max ($Max^C_{T}$), Range ($Range^C_{T}$)", 
-               "Mean ($\\mu^W_{ACC}$), SD ($\\sigma^W_{ACC}$)", 
-               "Mean ($\\mu^W_{ECG}$), SD ($\\sigma^W_{ECG}$), Mean HRV ($\\mu^W_{HRV}$), SD HRV ($\\sigma^W_{HRV}$)", 
-               "Mean ($\\mu^W_{EDA}$), SD ($\\sigma^W_{EDA}$), Min ($Min^W_{EDA}$), Max ($Max^W_{EDA}$), Range ($Range^C_{EDA}$)", 
-               "Mean ($\\mu^W_{T}$), SD ($\\sigma^W_{T}$), Min ($Min^W_{T}$), Max ($Max^W_{T}$), Range ($Range^W_{T}$)"))
+                         "Mean ($\\mu^C_{ECG}$), SD ($\\sigma^C_{ECG}$), Mean HRV ($\\mu^C_{HRV}$), SD HRV ($\\sigma^C_{HRV}$)", 
+                         "Mean ($\\mu^C_{EDA}$), SD ($\\sigma^C_{EDA}$), Min ($Min^C_{EDA}$)", 
+                         "Max ($Max^C_{EDA}$), Range ($Range^C_{EDA}$)", 
+                         "Mean ($\\mu^C_{EMG}$), SD ($\\sigma^C_{EMG}$), Min ($Min^C_{EMG}$)", 
+                         "Max ($Max^C_{EMG}$), Range ($Range^C_{EMG}$)", 
+                         "Mean ($\\mu^C_{inhale}$), SD ($\\sigma^C_{inhale}$)", "Mean ($\\mu^C_{exhale}$), SD ($\\sigma^C_{exhale}$)",
+                         "Min ($Min^C_{resp}$), Max ($Max^C_{resp}$), Range ($Range^C_{resp}$)", 
+                         "Mean ($\\mu^C_{breath}$), SD ($\\sigma^C_{breath}$), Min ($Min^C_{breath}$)", 
+                         "Max ($Max^C_{breath}$), Range ($Range^C_{breath}$), I/E Ratio", 
+                         "Mean ($\\mu^C_{T}$), SD ($\\sigma^C_{T}$), Min ($Min^C_{T}$), Max ($Max^C_{T}$), Range ($Range^C_{T}$)", 
+                         "Mean ($\\mu^W_{ACC}$), SD ($\\sigma^W_{ACC}$)", 
+                         "Mean ($\\mu^W_{ECG}$), SD ($\\sigma^W_{ECG}$), Mean HRV ($\\mu^W_{HRV}$), SD HRV ($\\sigma^W_{HRV}$)", 
+                         "Mean ($\\mu^W_{EDA}$), SD ($\\sigma^W_{EDA}$), Min ($Min^W_{EDA}$), Max ($Max^W_{EDA}$), Range ($Range^C_{EDA}$)", 
+                         "Mean ($\\mu^W_{T}$), SD ($\\sigma^W_{T}$), Min ($Min^W_{T}$), Max ($Max^W_{T}$), Range ($Range^W_{T}$)")
+  )
 )
 features_tbl %>% 
   kable(escape=F,   booktabs = T, align = "c",
         caption = "Summary of Sensor Data Categories, with the Extracted Predictors and Respective Symbols",) %>%
   kable_styling(latex_options = c("hold_position")) %>% 
   group_rows(index = c("Chest Sensor Data" = 11, "Wrist Sensor Data" = 5)) %>%
-  #column_spec(1, bold=T) %>%
   collapse_rows(columns = 1, latex_hline = "major") %>% 
   row_spec(0, bold = TRUE) #%>% 
-  #column_spec(column = c(2), latex_column_spec = "c")
+#column_spec(column = c(2), latex_column_spec = "c")
 ```
 
 
@@ -520,9 +520,9 @@ final_wrist_chest_lr_model_df_1Hz <- calc_metrics(lr_model_final_wrist_chest_1Hz
 bind_rows(final_wrist_lr_model_df_1Hz, final_wrist_chest_lr_model_df_1Hz) %>% 
   dplyr::select(model, everything()) %>% 
   kable( booktabs = T,  align = "c",
-        caption = "Model Results with Data Sampled at 1 Hz",
-        col.names = c("Model", "Accuracy", "F1-Score", "AUC", "Accuracy", "F1-Score", "AUC"
-        )) %>% 
+         caption = "Model Results with Data Sampled at 1 Hz",
+         col.names = c("Model", "Accuracy", "F1-Score", "AUC", "Accuracy", "F1-Score", "AUC"
+         )) %>% 
   kable_styling(latex_options = c("hold_position")) %>%
   add_header_above(c(" " = 1, "Cross Validation Data" = 3, "Test Data" = 3), escape = F)
 #vif(lr_model_final_wrist$finalModel) %>% kable()
@@ -677,8 +677,8 @@ lr_model_final_wrist_coef_tidy_df %>%
          `p.value` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", ifelse(`p.value`  == 0, "< 2e-16", `p.value`))
   )%>% 
   kableExtra::kable( booktabs = T,  escape = F, 
-                    caption = "Cofficients obtained with Model 1",
-                    col.names = c("Coefficient", "Estimate", "Std. Error", "p-value")) %>% 
+                     caption = "Cofficients obtained with Model 1",
+                     col.names = c("Coefficient", "Estimate", "Std. Error", "p-value")) %>% 
   kable_styling(latex_options = c("hold_position")) %>% 
   kableExtra::pack_rows("Participant", 8,22, escape = F) %>% 
   kableExtra::pack_rows("$\\sigma^W_{ACC}$ * Participant", 23,35, escape = F) %>% 
@@ -689,12 +689,18 @@ lr_model_final_wrist_coef_tidy_df %>%
 ```{r}
 lr_model_final_wrist_coef_tidy_df %>% 
   filter(term %in% lr_model_final_wrist_coef_tidy_df$term[str_detect(lr_model_final_wrist_coef_tidy_df$term, "participant")] 
-) %>% 
+  ) %>% 
   mutate(rownum = c(1:14,  1:14)) %>% 
   group_by(rownum) %>% 
-  mutate(sum = sum(estimate),
-         expsum = exp(sum)) %>% 
-  arrange(desc(expsum))
+  mutate(`Log Odds` = sum(estimate),
+         Odds = exp(`Log Odds`)) %>% 
+  arrange(desc(Odds)) %>% 
+  filter(row_number() %% 2 == 1) %>% 
+  ungroup() %>% 
+  dplyr::select(term, `Log Odds`, Odds) %>% 
+  mutate(term = str_remove_all(term, "participant")) %>% 
+  rename(Participant = term) %>% 
+  mutate_if(is.double, round, digits = 3)
 ```
 
 
@@ -773,8 +779,8 @@ lr_model_final_wrist_chest_coef_tidy_df %>%
          `p.value` = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10"| term ==  "$\\sigma^C_{HR}$ * S10", "", ifelse(`p.value`  == 0, "< 2e-16", `p.value`))
   )%>% 
   kableExtra::kable( booktabs = T, escape = F, 
-                    caption = "Cofficients obtained with Model 1",
-                    col.names = c("Coefficient", "Estimate", "Std. Error", "p-value")) %>% 
+                     caption = "Cofficients obtained with Model 1",
+                     col.names = c("Coefficient", "Estimate", "Std. Error", "p-value")) %>% 
   kable_styling(latex_options = c("hold_position")) %>% 
   kableExtra::pack_rows("Participant", 20,34, escape = F) %>% 
   kableExtra::pack_rows("$rms^W_{HRV}$ * Participant", 35,49, escape = F) %>% 
@@ -786,13 +792,18 @@ lr_model_final_wrist_chest_coef_tidy_df %>%
 ```{r}
 lr_model_final_wrist_chest_coef_tidy_df %>% 
   filter(term %in% lr_model_final_wrist_chest_coef_tidy_df$term[str_detect(lr_model_final_wrist_chest_coef_tidy_df$term, "participant")] 
-) %>% 
+  ) %>% 
   mutate(rownum = c(1:14,  1:14, 1:14)) %>% 
   group_by(rownum) %>% 
-  mutate(sum = sum(estimate),
-         expsum = exp(sum)) %>% 
-  arrange(desc(expsum)) %>% 
-  filter(row_number() %% 3 == 1)
+  mutate(`Log Odds` = sum(estimate),
+         Odds = exp(`Log Odds`)) %>% 
+  arrange(desc(Odds)) %>% 
+  filter(row_number() %% 3 == 1) %>% 
+  ungroup() %>% 
+  dplyr::select(term, `Log Odds`, Odds) %>% 
+  mutate(term = str_remove_all(term, "participant")) %>% 
+  rename(Participant = term) %>% 
+  mutate_if(is.double, round, digits = 3)
 ```
 
 
