@@ -59,7 +59,6 @@ library(boot)
 library(cvms)
 library(grid)
 library(gridExtra)
-
 knitr::opts_chunk$set(echo = FALSE,
                       message = FALSE,
                       warning = FALSE)
@@ -67,21 +66,17 @@ ggplot2::theme_set(new = theme_bw())
 ```
 
 ```{r load-data}
-
 survey <- read_csv("survey.csv")
 final_data <- readRDS("final_data.Rds")
 sub_data <- readRDS("subj_df.Rds")
-
 survey <- survey %>%
   rename(label = Label)
-
 sub_data <- sub_data %>%
   rename(participant = Participant) %>% 
   mutate(`Dominant hand` = as.factor(`Dominant hand`),
          Gender = as.factor(Gender),
          `Height (cm)` = as.double(`Height (cm)`),
          `Weight (kg)` = as.double(`Weight (kg)`))
-
 all_data <- final_data %>% 
   left_join(survey, by=c("participant", "label")) %>% 
   left_join(sub_data, by=c("participant")) %>% 
@@ -100,7 +95,6 @@ set.seed(20200922)
 idx = createDataPartition(all_data$label, p = 0.8, list = FALSE)
 train = all_data[idx, ]
 test = all_data[-idx, ]
-
 train_control <- trainControl(method="repeatedcv", number = 5, savePredictions = T) # this is the cross validation
 ```
 
@@ -110,7 +104,6 @@ round_perc = function(x) {
     round(x*100, digits = 2) 
   }
 }
-
 calc_metrics = function(model, testing_data, folds) {
   list = list()
   acc_list = c()
@@ -170,7 +163,6 @@ calc_metrics = function(model, testing_data, folds) {
   )
   return(bind_cols(cv_df, test_df))
 }
-
 # returns accuracy/F1score/AUC if you run the model using the previous  code
 ```
 
@@ -187,39 +179,29 @@ lr_model_final_both <- train(label ~ participant + sd_EDA + sd_EDA_wrist + sd_Te
                              data = train, trControl = train_control, 
                              method = "glm",
                              family ="binomial")
-
 # saved the model
 #save(lr_model_final_both, file = 'lr_model_final_both')
-
 # Model is pre-ran and save, can be loaded to save time- loading and calling 'model'
 #load('lr_model_final_both')
 lr_model_final_both %>% summary() 
-
 calc_metrics(lr_model_final_both, test, 5)
 # model <- glm(label ~ participant+ sd_EDA+ sd_EDA_wrist+ sd_Temp_chest+ sd_Temp_wrist+ min_Temp_wrist+ mean_EMG+min_EMG+ sd_inhale+ sd_exhale+ sd_breath+ min_breath+ max_breath+i_e_ratio+ mean_ACC_chest_mag+ sd_ACC_chest_mag+ mean_ACC_wrist_mag+ sd_ACC_wrist_mag+ sd_heart_rate_wrist_BVP+ sd_heart_rate_variability_wrist_BVP+ rms_heart_rate_variability_wrist_BVP+ sd_heart_rate_chest_ECG+ sd_heart_rate_variability_chest_ECG+ rms_heart_rate_variability_chest_ECG + 
 #       participant*sd_EDA_wrist + sd_heart_rate_variability_chest_ECG*participant + rms_heart_rate_variability_wrist_BVP*participant, # try different interactions 
 #     data = train, family = "binomial") %>%
 #   stepAIC(trace = FALSE)
-
 # saved the model
 # save(model, file = 'savedmodel')
-
 # Model is pre-ran and save, can be loaded to save time- loading and calling 'model'
 # load('savedmodel')
 # model
-
 # prediction
 pred <- predict(model, test, type="response")
 pred <- ifelse(pred > 0.5, 1, 0)
 mean(pred == test$label)
-
 target <- test$label
-
 summary(model)
-
 car::vif(lr_model_final_both$finalModel)%>% round(2) %>% kable() 
 car::vif(model)%>% round(2) %>% kable() 
-
 ```
 
 ```{r random-forests, eval=FALSE}
@@ -227,7 +209,6 @@ set.seed(20200922)
 forest_data <- all_data %>% 
   subset(dplyr::select = -c(PANAS_Angry, PANAS_Irritated, SSSQ_Committed, SSSQ_Succeed, SSSQ_Motivated, SSSQ_Reflected, SSSQ_Concerned, SSSQ_Worried, Condition, PANAS_Sad))
 forest_data <- forest_data[1:(length(forest_data)-1)]
-
 forest_data <- forest_data %>%
   mutate(participant = as.factor(participant),
          Age = as.numeric(Age),
@@ -235,17 +216,13 @@ forest_data <- forest_data %>%
          Gender = as.factor(Gender),
          Height = as.numeric(`Height (cm)`),
          Weight = as.numeric(`Weight (kg)`))
-
 forest_data <- forest_data %>% 
   subset(dplyr::select = -c(`Dominant hand`, `Height (cm)`, `Weight (kg)`))
-
 #idx = createDataPartition(forest_data$label, p = 0.8, list = FALSE)
 #train = forest_data[idx, ]
 #test = forest_data[-idx, ]
-
 #correlationMatrix <- cor(subset(forest_data, dplyr::select = -c(Gender, Hand, participant, label)))
 #highlyCorrelated <- findCorrelation(correlationMatrix, cutoff=0.5, verbose = FALSE)
-
 require(caTools)
 # full_rf <- randomForest(
 #   label ~ .,
@@ -280,35 +257,26 @@ require(caTools)
 # pred = predict(all_no_survey_rf, newdata=test)
 # cm=table(test$label, pred)
 # cm
-
 sparse_no_survey_rf <- randomForest(
   label ~ participant +  max_EDA_wrist + sd_ACC_chest_mag, data=train)
 round(importance(sparse_no_survey_rf), 2)
-
 pred = predict(sparse_no_survey_rf, newdata=test)
 cm=table(test$label, pred)
 cm
-
 misclass_rate = (64+27)/(4339+64+27+7888)
 misclass_rate
-
 print(sparse_no_survey_rf)
-
 wrist_rf <- randomForest(
   label ~ participant + min_EDA_wrist + max_EDA_wrist + range_EDA_wrist + sd_wrist_ACC_Z, data=train)
 round(importance(wrist_rf), 2)
-
 pred = predict(wrist_rf, newdata=test)
 cm=table(test$label, pred)
 cm
-
 misclass_rate = (5+20)/(4398+5+20+7895)
 misclass_rate
-
 ```
 
 ```{r cv-random-forest,  eval=FALSE}
-
 if (file.exists('sparse_no_survey_rf')) {
   load(file = 'sparse_no_survey_rf')
 } else {
@@ -319,8 +287,6 @@ if (file.exists('sparse_no_survey_rf')) {
   save(sparse_no_survey_rf, file = 'sparse_no_survey_rf')
 }
 calc_metrics(sparse_no_survey_rf, test, 5)
-
-
 if (file.exists('wrist_rf')) {
   load(file = 'wrist_rf')
 } else {
@@ -329,9 +295,7 @@ if (file.exists('wrist_rf')) {
     trControl = train_control, method = "rf")
   save(sparse_no_survey_rf, file = 'wrist_rf')
 }
-
 calc_metrics(wrist_rf, test, 5)
-
 ```
 
 ```{r Hierarchal Model, eval=FALSE}
@@ -339,15 +303,11 @@ calc_metrics(wrist_rf, test, 5)
 survey_var<- paste(colnames(survey))
 sub_var <- paste(colnames(sub_data))
 fixed_var <- c(survey_var, sub_var)
-
 fixed_var <- fixed_var[-c(2,37:42)] # removed missing SSSQ variables because of NA
-
 # Random Effects (wearable variables)
 wearable_var <- paste ("(1|",colnames(final_data)[-c(1,2)], ")")
-
 # Formula
 mlm_formula <- as.formula(paste("as.numeric(label) ~ participant + ", paste(wearable_var[c(9,50)], collapse= "+")))
-
 mlm <- lmer(mlm_formula, data = train, REML=FALSE,control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.rankZ = "ignore", check.nobs.vs.nRE="ignore", optimizer ="Nelder_Mead", ))
 summary(mlm)
 stepAIC(mlm, direction = "backward", trace = TRUE, data = train)
@@ -407,7 +367,6 @@ features_tbl <- data.frame(
                "Mean ($\\mu^W_{EDA}$), SD ($\\sigma^W_{EDA}$), Min ($Min^W_{EDA}$), Max ($Max^W_{EDA}$), Range ($Range^C_{EDA}$)", 
                "Mean ($\\mu^W_{T}$), SD ($\\sigma^W_{T}$), Min ($Min^W_{T}$), Max ($Max^W_{T}$), Range ($Range^W_{T}$)"))
 )
-
 features_tbl %>% 
   kable(escape=F,   booktabs = T, align = "c",
         caption = "Summary of Sensor Data Categories, with the Extracted Predictors and Respective Symbols",) %>%
@@ -459,7 +418,6 @@ lr_model_final_wrist <- train(label ~  sd_EDA_wrist + sd_ACC_wrist_mag + sd_hear
                               data = train, trControl = train_control, 
                               method = "glm",
                               family ="binomial") 
-
 #summary(lr_model_final_wrist$finalModel)
 ```
 
@@ -480,13 +438,11 @@ $f_1$
 ```{r logistic-regression-metrics}
 final_wrist_lr_model_df <- calc_metrics(lr_model_final_wrist, test, 5)  %>% 
   mutate(model = "Wrist Only")
-
 final_wrist_chest_lr_model_df <- calc_metrics(lr_model_final_wrist_chest, test, 5) %>% 
   mutate(model = "Chest & Wrist")
-
 bind_rows(final_wrist_lr_model_df, final_wrist_chest_lr_model_df) %>% 
   dplyr::select(model, everything()) %>% 
-  kable(booktabs = T, 
+  kable(booktabs = T, align = "c",
         caption = "Model Results with 5-fold Cross Validation, with Mean and Standard Deviation reported",
         col.names = c("Model", "Accuracy", "F1-Score", "AUC", "Accuracy", "F1-Score", "AUC"
         )) %>% 
@@ -508,7 +464,6 @@ Using data from both the chest-worn and wrist-worn wearables, our model reports 
 ```{r full-logistic-model-diagnostics, fig.align="center"}
 #VIF values (measures multi-collinearity)
 #vif(lr_model_final_wrist$finalModel)
-
 #Sensitivity Analysis
 table1 <- tidy(table(tibble("target" = test$label,
                             "prediction" = predict(lr_model_final_wrist, test))))
@@ -518,8 +473,6 @@ pcm1 <- plot_confusion_matrix(table1,
                               counts_col = "n") + 
   ggplot2::labs(subtitle = "Wrist Data (Model 1)") + 
   ggplot2::theme(plot.subtitle = element_text(hjust = 0.5))
-
-
 table2 <- tidy(table(tibble("target" = test$label,
                             "prediction" = predict(lr_model_final_wrist_chest, test))))
 pcm2 <- plot_confusion_matrix(table2, 
@@ -528,7 +481,6 @@ pcm2 <- plot_confusion_matrix(table2,
                               counts_col = "n") + 
   ggplot2::labs(subtitle = "Chest & Wrist Data (Model 2)") + 
   ggplot2::theme(plot.subtitle = element_text(hjust = 0.5))
-
 gridExtra::grid.arrange(pcm1, pcm2, ncol=2, 
                         top = textGrob("Confusion Matrices",gp=gpar(fontsize=12)))
 ```
@@ -537,12 +489,11 @@ gridExtra::grid.arrange(pcm1, pcm2, ncol=2,
 
 Since there is no standard sampling frequency in the literature, we first examine the sensitivity of our sampling rate of 4 Hz. Table 3 displays the results of the wrist data and all data models, with the same predictors as Models 1 and 2, when using data that was sampled at 1 Hz. In general, the models using data sampled at 4 Hz perform better on the training data, while the models using data sampled at 1 Hz perform better on the testing data. There is also higher variability in the metrics of the models using data sampled at 1 Hz - this is because we are using a much smaller sample size, which leads to higher sampling variability. However, the difference in metrics is very minimal; thus we can verify that our results are not highly sensitive to different sampling frequencies. 
 
-```{r eval=FALSE}
+```{r}
 train_1Hz <- train %>%
   slice(which(row_number() %% 4 == 1))
 test_1Hz <- test %>%
   slice(which(row_number() %% 4 == 1))
-
 lr_model_final_wrist_1Hz <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
                                     sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag + 
                                     sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + 
@@ -550,7 +501,6 @@ lr_model_final_wrist_1Hz <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wr
                                   data = train_1Hz, trControl = train_control, 
                                   method = "glm",
                                   family ="binomial") 
-
 lr_model_final_wrist_chest_1Hz <- train(label ~ participant + sd_EDA + sd_EDA_wrist + sd_Temp_chest + 
                                           min_Temp_wrist + min_EMG + sd_inhale + sd_exhale + max_breath + 
                                           i_e_ratio + mean_ACC_chest_mag + sd_ACC_chest_mag + sd_ACC_wrist_mag + 
@@ -565,21 +515,19 @@ lr_model_final_wrist_chest_1Hz <- train(label ~ participant + sd_EDA + sd_EDA_wr
 
 We also examine assumptions for a logistic regression model. We display binned residual plots for a subset of predictors, for both models. In general, the binned residual plots are not randomly dispersed about 0. This could be due to relatively high multicollinearity, especially with the $participant$ predictor and interactions between $participant$ and other engineered features. We had to include $participant$ in the model to correctly quantify uncertainty of our model coefficients. In addition, adding $participant$ addresses independence at the subject level, but each individual sample is not independent; presumably, a person's heart rate from one second ago affects their current heart rate. 
 
-```{r eval=FALSE}
+```{r }
 final_wrist_lr_model_df_1Hz <- calc_metrics(lr_model_final_wrist_1Hz, test_1Hz, 5) %>% 
   mutate(model = "Wrist Only")
-
 final_wrist_chest_lr_model_df_1Hz <- calc_metrics(lr_model_final_wrist_chest_1Hz, test_1Hz, 5) %>% 
   mutate(model = "Chest & Wrist")
-
 bind_rows(final_wrist_lr_model_df_1Hz, final_wrist_chest_lr_model_df_1Hz) %>% 
   dplyr::select(model, everything()) %>% 
-  kable( booktabs = T,  
+  kable( booktabs = T,  align = "c",
         caption = "Model Results with Data Sampled at 1 Hz",
         col.names = c("Model", "Accuracy", "F1-Score", "AUC", "Accuracy", "F1-Score", "AUC"
         )) %>% 
   kable_styling(latex_options = c("hold_position")) %>%
-  add_header_above(c(" " = 1, "Cross Validation Data" = 3, "Test Data" = 3))
+  add_header_above(c(" " = 1, "Cross Validation Data" = 3, "Test Data" = 3), escape = F)
 #vif(lr_model_final_wrist$finalModel) %>% kable()
 ```
 
@@ -593,17 +541,13 @@ lr_model_final_wrist_v2 <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wri
                                  data = train, trControl = train_control, 
                                  method = "glm",
                                  family ="binomial") 
-
 calc_metrics(lr_model_final_wrist_v2, test, 5)
-
-
 anova(lr_model_final_wrist_v2$finalModel, lr_model_final_wrist$finalModel,  test = "Chisq")
 ```
 
 
 ```{r eval=FALSE}
 #sensitivity analysis with 10 folds --> pretty much the same 
-
 lr_model_final_wrist10_folds <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
                                         sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag + 
                                         sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + 
@@ -611,7 +555,6 @@ lr_model_final_wrist10_folds <- train(label ~ participant + sd_EDA_wrist + sd_AC
                                       data = train, trControl = trainControl(method="repeatedcv", number = 10, savePredictions = T), 
                                       method = "glm",
                                       family ="binomial") 
-
 lr_model_final_wrist_chest10_folds <- train(label ~ participant + sd_EDA + sd_EDA_wrist + sd_Temp_chest + 
                                               min_Temp_wrist + min_EMG + sd_inhale + sd_exhale + max_breath + 
                                               i_e_ratio + mean_ACC_chest_mag + sd_ACC_chest_mag + sd_ACC_wrist_mag + 
@@ -627,10 +570,8 @@ lr_model_final_wrist_chest10_folds <- train(label ~ participant + sd_EDA + sd_ED
 ```{r eval=FALSE}
 final_wrist_lr_model_df_10 <- calc_metrics(lr_model_final_wrist10_folds, test, 10) %>% 
   mutate(model = "Wrist Only")
-
 final_wrist_chest_lr_model_df_10 <- calc_metrics(lr_model_final_wrist_chest10_folds, test, 10) %>% 
   mutate(model = "Chest & Wrist")
-
 bind_rows(final_wrist_lr_model_df_10, final_wrist_chest_lr_model_df_10) %>% 
   dplyr::select(model, everything()) %>% 
   kable(booktabs = T, 
@@ -671,12 +612,10 @@ We conduct sensitivity analysis by using 10-fold cross validation on our trainin
 
 
 ```{r rf-using-same-preds-as-wrist-log-model, eval=FALSE}
-
 rf_model_final_wrist <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
                                 sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag + sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP,
                               data = newtrain, trControl = train_control,
                               method = "rf", tuneGrid = expand.grid(.mtry=floor(sqrt(34))))
-
 save(rf_model_final_wrist, file = 'rf_model_final_wrist')
 summary(rf_model_final_wrist$finalModel)
 calc_metrics(rf_model_final_wrist, test, 5)
@@ -693,9 +632,6 @@ lr_model_final_wrist_coef_tidy_df <- lr_model_final_wrist$finalModel %>%
   dplyr::select(-statistic) %>% 
   bind_rows(tibble(term = c("S10", "$\\sigma^W_{ACC}$ * S10"), 
                    estimate = c(0,0), `std.error` = c(0,0), `p.value`= c(0,0))) 
-
-
-
 reordered_terms_wrist <- c("(Intercept)", "sd_EDA_wrist", "sd_ACC_wrist_mag",  
                            "sd_heart_rate_variability_wrist_BVP", "`sd_EDA_wrist:sd_ACC_wrist_mag`",
                            "`sd_EDA_wrist:sd_heart_rate_variability_wrist_BVP`",
@@ -714,7 +650,6 @@ reordered_terms_wrist <- c("(Intercept)", "sd_EDA_wrist", "sd_ACC_wrist_mag",
                            "`sd_ACC_wrist_mag:participantS16`","`sd_ACC_wrist_mag:participantS17`"
                            
 )
-
 wrist_rows <- c("(Intercept)", "$\\sigma^W_{EDA}$", "$\\sigma^W_{ACC}$",  
                 "$\\sigma^W_{HRV}$", "$\\sigma^W_{EDA}$ * $\\sigma^W_{ACC}$",
                 "$\\sigma^W_{EDA}$ * $\\sigma^W_{HRV}$",
@@ -732,8 +667,6 @@ wrist_rows <- c("(Intercept)", "$\\sigma^W_{EDA}$", "$\\sigma^W_{ACC}$",
                 "$\\sigma^W_{ACC}$ * S14","$\\sigma^W_{ACC}$ * S15",
                 "$\\sigma^W_{ACC}$ * S16","$\\sigma^W_{ACC}$ * S17"                     
 )
-
-
 lr_model_final_wrist_coef_tidy_df %>% 
   slice(match(reordered_terms_wrist, term)) %>% 
   mutate_if(is.numeric, round, digits = 3) %>% 
@@ -747,7 +680,9 @@ lr_model_final_wrist_coef_tidy_df %>%
                     col.names = c("Coefficient", "Estimate", "Std. Error", "p-value")) %>% 
   kable_styling(latex_options = c("hold_position")) %>% 
   kableExtra::pack_rows("Participant", 8,22, escape = F) %>% 
-  kableExtra::pack_rows("$\\sigma^W_{ACC}$ * Participant", 23,35, escape = F) 
+  kableExtra::pack_rows("$\\sigma^W_{ACC}$ * Participant", 23,35, escape = F) %>% 
+  column_spec(1, width = "4cm") %>% 
+  column_spec(column = c(2:4), latex_column_spec = "c") 
 ```
 
 ### All Data Model 
@@ -758,7 +693,6 @@ lr_model_final_wrist_chest_coef_tidy_df <- lr_model_final_wrist_chest$finalModel
   dplyr::select(-statistic) %>% 
   bind_rows(tibble(term = c("S10", "$rms^W_{HRV}$ * S10", "$\\sigma^C_{HR}$ * S10"), 
                    estimate = c(0,0,0), `std.error` = c(0,0,0), `p.value`= c(0,0,0))) 
-
 reordered_terms_wrist_chest <- c("(Intercept)", "sd_EDA" , "sd_EDA_wrist", "sd_Temp_chest" , 
                                  "min_Temp_wrist" , "min_EMG" , "sd_inhale" , "sd_exhale" , "max_breath" , "i_e_ratio" , "mean_ACC_chest_mag" ,
                                  "sd_ACC_chest_mag" , "sd_ACC_wrist_mag" , 
@@ -788,7 +722,6 @@ reordered_terms_wrist_chest <- c("(Intercept)", "sd_EDA" , "sd_EDA_wrist", "sd_T
                                  "`sd_heart_rate_chest_ECG:participantS14`","`sd_heart_rate_chest_ECG:participantS15`",
                                  "`sd_heart_rate_chest_ECG:participantS16`","`sd_heart_rate_chest_ECG:participantS17`"
 )
-
 chest_wrist_rows <- c("(Intercept)", "$\\sigma^C_{EDA}$" , "$\\sigma^W_{EDA}$", "$\\sigma^C_{T}$" , 
                       "$min^W_{T}$" , "$min^C_{EMG}$" , "$\\sigma_{inhale}$" , "$\\sigma_{exhale}$" , "$max_{breath}$" , "$ ie_{ratio}$" , "$\\mu^C_{ACC}$" ,
                       "$\\sigma^C_{ACC}$" , "$\\sigma^W_{ACC}$" , 
@@ -818,7 +751,6 @@ chest_wrist_rows <- c("(Intercept)", "$\\sigma^C_{EDA}$" , "$\\sigma^W_{EDA}$", 
                       "$\\sigma^C_{HR}$ * S14","$\\sigma^C_{HR}$ * S15",
                       "$\\sigma^C_{HR}$ * S16","$\\sigma^C_{HR}$ * S17"
 )
-
 lr_model_final_wrist_chest_coef_tidy_df %>% 
   slice(match(reordered_terms_wrist_chest, term)) %>% 
   mutate_if(is.numeric, round, digits = 3) %>% 
@@ -833,7 +765,7 @@ lr_model_final_wrist_chest_coef_tidy_df %>%
   kable_styling(latex_options = c("hold_position")) %>% 
   kableExtra::pack_rows("Participant", 20,34, escape = F) %>% 
   kableExtra::pack_rows("$rms^W_{HRV}$ * Participant", 35,49, escape = F) %>% 
-  kableExtra::pack_rows("$\\sigma^C_{HR}$ * Participant", 50,64, escape = F) 
+  kableExtra::pack_rows("$\\sigma^C_{HR}$ * Participant", 50,64, escape = F) %>% 
+  column_spec(1, width = "4cm") %>% 
+  column_spec(column = c(2:4), latex_column_spec = "c") 
 ```
-
-
