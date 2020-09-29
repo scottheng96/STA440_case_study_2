@@ -41,6 +41,7 @@ pkgTest("boot")
 pkgTest("cvms")
 pkgTest("grid")
 pkgTest("gridExtra")
+pkgTest("arm")
 ```
 
 ```{r include=FALSE}
@@ -519,6 +520,23 @@ bind_rows(final_wrist_lr_model_df_1Hz, final_wrist_chest_lr_model_df_1Hz) %>%
   add_header_above(c(" " = 1, "Cross Validation Data" = 3, "Test Data" = 3), escape = F)
 #vif(lr_model_final_wrist$finalModel) %>% kable()
 ```
+
+```{r resid-plots}
+
+aug_wrist <- augment(lr_model_final_wrist$finalModel, type.predict = "response", 
+                     type.residuals = "deviance")
+
+arm::binnedplot(x=aug_wrist$.fitted,y=aug_wrist$.resid,xlab="Predicted Probabilities", 
+                main = "Binned Residual vs. Predicted Values")
+
+aug_chest_wrist <- augment(lr_model_final_wrist_chest$finalModel, type.predict = "response", 
+                     type.residuals = "deviance")
+
+arm::binnedplot(x=aug_chest_wrist$.fitted,y=aug_chest_wrist$.resid,xlab="Predicted Probabilities", 
+                main = "Binned Residual vs. Predicted Values")
+
+```
+
 
 We also examine assumptions for a logistic regression model. We display binned residual plots for a subset of predictors, for both models. In general, the binned residual plots are not randomly dispersed about 0. This could be due to relatively high multicollinearity, especially with the $participant$ predictor and interactions between $participant$ and other engineered features. We had to include $participant$ in the model to correctly quantify uncertainty of our model coefficients. In addition, adding $participant$ addresses independence at the subject level, but each individual sample is not independent; presumably, a person's heart rate from one second ago affects their current heart rate. 
 
