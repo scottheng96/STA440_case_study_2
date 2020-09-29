@@ -3,6 +3,9 @@ title: "Detecting Stress Using Wearables"
 author: "Matty Pahren, Scott Heng On, Ethan Shen"
 fontsize: 12pt
 geometry: "left=1.3cm,right=1.3cm,top=1.3cm,bottom=1.3cm"
+indent: true
+header-includes:
+    - \usepackage{indentfirst}
 output: 
   pdf_document:
      latex_engine: xelatex
@@ -36,6 +39,8 @@ pkgTest("lme4")
 pkgTest("cAIC4")
 pkgTest("boot")
 pkgTest("cvms")
+pkgTest("grid")
+pkgTest("gridExtra")
 ```
 
 ```{r include=FALSE}
@@ -52,6 +57,8 @@ library(lme4)
 library(cAIC4)
 library(boot)
 library(cvms)
+library(grid)
+library(gridExtra)
 
 knitr::opts_chunk$set(echo = FALSE,
                       message = FALSE,
@@ -133,10 +140,10 @@ calc_metrics = function(model, testing_data, folds) {
   
   acc_mean = acc_list %>% mean(na.rm=T) %>% round_perc()
   acc_sd = acc_list %>% sd(na.rm=T) %>% round_perc()
-  f1_mean = f1_list %>% mean(na.rm=T) %>% round_perc()
-  f1_sd = f1_list %>% sd(na.rm=T) %>% round_perc()
-  AUC_mean = AUC_list %>% mean(na.rm=T) %>% round_perc()
-  AUC_sd = AUC_list %>% sd(na.rm=T) %>% round_perc()
+  f1_mean = f1_list %>% mean(na.rm=T)  %>% round_perc()
+  f1_sd = f1_list %>% sd(na.rm=T)  %>% round_perc()
+  AUC_mean = AUC_list %>% mean(na.rm=T)  %>% round_perc()
+  AUC_sd = AUC_list %>% sd(na.rm=T)  %>% round_perc()
   
   # metrics for testing data
   pred <- predict(model, newdata = testing_data)
@@ -151,13 +158,13 @@ calc_metrics = function(model, testing_data, folds) {
   test_AUC <-  AUC(pred %>% as.double(), testing_data$label %>% as.double())
   
   cv_df <- tibble(
-    Accuracy = paste(acc_mean, "±", acc_sd),
-    F1 = paste(f1_mean, "±", f1_sd),
-    AUC = paste(AUC_mean, "±", AUC_sd)
+    Accuracy = paste0(acc_mean, "% ± \n", acc_sd, "%"),
+    F1 = paste(f1_mean, "± \n", f1_sd),
+    AUC = paste(AUC_mean, "± \n", AUC_sd)
   )
   
   test_df <- tibble(
-    Accuracy = test_acc %>% round_perc(), 
+    Accuracy = paste0(test_acc %>% round_perc(), "%"), 
     F1 = test_F1 %>% round_perc(),
     AUC = test_AUC %>% round_perc()
   )
@@ -167,58 +174,26 @@ calc_metrics = function(model, testing_data, folds) {
 # returns accuracy/F1score/AUC if you run the model using the previous  code
 ```
 
-```{r logistic-regression-wrist}
-lr_model_final_wrist <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
-                                sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag + sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP,
-                              data = train, trControl = train_control, 
-                              method = "glm",
-                              family ="binomial") 
-
-summary(lr_model_final_wrist$finalModel)
-calc_metrics(lr_model_final_wrist, test, 5) %>%   kable(booktabs = T, 
-        caption = "Parameters obtained with Model 1, with 95\\% Credible Intervals (CI)",
-        col.names = c("Accuracy", "F1-Score", "AUC", "Accuracy", "F1-Score", "AUC"
-        )) %>% 
-  kable_styling(latex_options = c("hold_position")) %>%
-add_header_above(c("Cross Validation Data" = 3, "Test Data" = 3))
-vif(lr_model_final_wrist$finalModel) %>% kable()
-
-rf_model_final_wrist <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
-                                sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag + sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP,
-                              data = newtrain, trControl = train_control,
-                              method = "rf", tuneGrid = expand.grid(.mtry=floor(sqrt(34))))
-
-save(rf_model_final_wrist, file = 'rf_model_final_wrist')
-summary(rf_model_final_wrist$finalModel)
-calc_metrics(rf_model_final_wrist, test, 5)
-varImp(rf_model_final_wrist$finalModel)
-
-```
-
-$$
-Y_i \sim Bernoulli(\pi_i) \\
-log(\frac{\pi_i}{1 - \pi_i}) = \beta_0 + \beta_1 \ \sigma^W_{EDA} + \beta_2 \ \sigma^W_{ACC} + \beta_3 \ \sigma^W_{HRV} +  \beta_4 \ \sigma^W_{EDA} * \sigma^W_{HRV} + \\
-\beta_5 \ \sigma^W_{EDA} * \sigma^W_{ACC} + \beta_6 \ \sigma^W_{HRV} * \sigma^W_{ACC} + \sum_{j=2}^{15}\beta_{7j} \ I(subject_i = j) + \\
-\sum_{j=2}^{15} \beta_{8j}\ \sigma^W_{ACC} * I(subject_i = j)
-
-$$
 
 
-$i$ corresponds to each sample, and $Y_i$ indicates the corresponding state (1 = stress or 0 = amusement). $subject_i$ represents the unique subject ID that was assigned to each of the 15 participants. The reference level for $subject$ is Subject 10 (S10), who had the highest number of samples in the filtered dataset. The remaining levels $j \in (2, 3, \dots, 14, 15)$ correspond to S2, S3, S4, S5, S6, S7, S8, S9, S11, S13, S14, S15, S16 and S17 respectively. 
-
-
-```{r full-logistic-model}
-lr_model_final_both <- train(label ~ participant+ sd_EDA+ sd_EDA_wrist+ sd_Temp_chest+ min_Temp_wrist+min_EMG+ sd_inhale+ sd_exhale+ max_breath+i_e_ratio+ mean_ACC_chest_mag+ sd_ACC_chest_mag+ sd_ACC_wrist_mag+ sd_heart_rate_wrist_BVP+ sd_heart_rate_variability_wrist_BVP+ rms_heart_rate_variability_wrist_BVP+ sd_heart_rate_chest_ECG+ rms_heart_rate_variability_chest_ECG + rms_heart_rate_variability_wrist_BVP*participant + sd_heart_rate_chest_ECG*participant, # try different interactions 
-    data = train, trControl = train_control, 
-                              method = "glm",
-                              family ="binomial")
+```{r full-logistic-model-d, eval=FALSE}
+lr_model_final_both <- train(label ~ participant + sd_EDA + sd_EDA_wrist + sd_Temp_chest + 
+                               min_Temp_wrist + min_EMG + sd_inhale + sd_exhale + max_breath + 
+                               i_e_ratio + mean_ACC_chest_mag + sd_ACC_chest_mag + sd_ACC_wrist_mag + 
+                               sd_heart_rate_wrist_BVP + sd_heart_rate_variability_wrist_BVP + rms_heart_rate_variability_wrist_BVP + 
+                               sd_heart_rate_chest_ECG + rms_heart_rate_variability_chest_ECG + 
+                               rms_heart_rate_variability_wrist_BVP*participant + sd_heart_rate_chest_ECG*participant + 
+                               sd_EDA_wrist * min_Temp_wrist, # try different interactions 
+                             data = train, trControl = train_control, 
+                             method = "glm",
+                             family ="binomial")
 
 # saved the model
 #save(lr_model_final_both, file = 'lr_model_final_both')
 
 # Model is pre-ran and save, can be loaded to save time- loading and calling 'model'
 #load('lr_model_final_both')
-lr_model_final_both %>% summary()
+lr_model_final_both %>% summary() 
 
 calc_metrics(lr_model_final_both, test, 5)
 # model <- glm(label ~ participant+ sd_EDA+ sd_EDA_wrist+ sd_Temp_chest+ sd_Temp_wrist+ min_Temp_wrist+ mean_EMG+min_EMG+ sd_inhale+ sd_exhale+ sd_breath+ min_breath+ max_breath+i_e_ratio+ mean_ACC_chest_mag+ sd_ACC_chest_mag+ mean_ACC_wrist_mag+ sd_ACC_wrist_mag+ sd_heart_rate_wrist_BVP+ sd_heart_rate_variability_wrist_BVP+ rms_heart_rate_variability_wrist_BVP+ sd_heart_rate_chest_ECG+ sd_heart_rate_variability_chest_ECG+ rms_heart_rate_variability_chest_ECG + 
@@ -247,36 +222,10 @@ car::vif(model)%>% round(2) %>% kable()
 
 ```
 
-
-$$
-Y_i \sim Bernoulli(\pi_i) \\
-log(\frac{\pi_i}{1 - \pi_i}) = \beta_0 + \beta_1 \ \mu^C_{ACC} +  \beta_2 \ \sigma^C_{ACC} +  \beta_3 \ \sigma^W_{ACC} +  \\
- \beta_4 \ \sigma^C_{HR} + \beta_5 \ \sigma^W_{HR} +  \beta_6 \ \sigma^W_{HRV} +   \beta_7 \ rms^C_{HRV} + \beta_8 \ rms^W_{HRV} +  \\
-\beta_9 \ \sigma^C_{EDA} + \beta_{10} \ \sigma^W_{EDA} + \beta_{11} \ min^C_{EMG} + \\
-\beta_{12} \ \sigma_{inhale}+  \beta_{13} \ \sigma_{exhale}  +  \beta_{14} \ max_{breath} +  \beta_{15} \ ie_{ratio} + \\
-\beta_{16} \ \sigma^C_{T} +  \beta_{17} \ min^W_{T} +   \sum_{j=2}^{15}\beta_{18j} \ I(subject_i = j) + \\
-\sum_{j=2}^{15} \beta_{19j} \ rms^W_{HRV} * I(subject_i = j) + \\
-\sum_{j=2}^{15} \beta_{20j}\ \sigma^C_{HR} * I(subject_i = j)
-$$
-
-```{r full-logistic-model (diagnostics)}
-#VIF values (measures multi-collinearity)
-vif(model)
-
-#Sensitivity Analysis
-prediction <- as.factor(pred)
-table <- tidy(table(tibble("target" = target,
-                     "prediction" = prediction)))
-plot_confusion_matrix(table, 
-                      targets_col = "target", 
-                      predictions_col = "prediction",
-                      counts_col = "n")
-```
-
-```{r random-forests}
+```{r random-forests, eval=FALSE}
 set.seed(20200922)
 forest_data <- all_data %>% 
-  subset(select = -c(PANAS_Angry, PANAS_Irritated, SSSQ_Committed, SSSQ_Succeed, SSSQ_Motivated, SSSQ_Reflected, SSSQ_Concerned, SSSQ_Worried, Condition, PANAS_Sad))
+  subset(dplyr::select = -c(PANAS_Angry, PANAS_Irritated, SSSQ_Committed, SSSQ_Succeed, SSSQ_Motivated, SSSQ_Reflected, SSSQ_Concerned, SSSQ_Worried, Condition, PANAS_Sad))
 forest_data <- forest_data[1:(length(forest_data)-1)]
 
 forest_data <- forest_data %>%
@@ -288,13 +237,13 @@ forest_data <- forest_data %>%
          Weight = as.numeric(`Weight (kg)`))
 
 forest_data <- forest_data %>% 
-  subset(select = -c(`Dominant hand`, `Height (cm)`, `Weight (kg)`))
+  subset(dplyr::select = -c(`Dominant hand`, `Height (cm)`, `Weight (kg)`))
 
 #idx = createDataPartition(forest_data$label, p = 0.8, list = FALSE)
 #train = forest_data[idx, ]
 #test = forest_data[-idx, ]
 
-#correlationMatrix <- cor(subset(forest_data, select = -c(Gender, Hand, participant, label)))
+#correlationMatrix <- cor(subset(forest_data, dplyr::select = -c(Gender, Hand, participant, label)))
 #highlyCorrelated <- findCorrelation(correlationMatrix, cutoff=0.5, verbose = FALSE)
 
 require(caTools)
@@ -358,24 +307,34 @@ misclass_rate
 
 ```
 
-```{r cv-random-forest, eval=FALSE}
-sparse_no_survey_rf <- train(
-  label ~ participant +  max_EDA_wrist + sd_ACC_chest_mag, data=train,
-  trControl = train_control, method = "rf"
-)
-save(sparse_no_survey_rf, file = 'sparse_no_survey_rf')
+```{r cv-random-forest,  eval=FALSE}
+
+if (file.exists('sparse_no_survey_rf')) {
+  load(file = 'sparse_no_survey_rf')
+} else {
+  sparse_no_survey_rf <- train(
+    label ~ participant +  max_EDA_wrist + sd_ACC_chest_mag, data=train,
+    trControl = train_control, method = "rf"
+  )
+  save(sparse_no_survey_rf, file = 'sparse_no_survey_rf')
+}
 calc_metrics(sparse_no_survey_rf, test, 5)
 
 
-wrist_rf <- train(
-  label ~ participant + min_EDA_wrist + max_EDA_wrist + range_EDA_wrist + sd_wrist_ACC_Z, data=train,
-  trControl = train_control, method = "rf")
-save(wrist_rf, file = 'wrist_rf')
+if (file.exists('wrist_rf')) {
+  load(file = 'wrist_rf')
+} else {
+  wrist_rf <- train(
+    label ~ participant + min_EDA_wrist + max_EDA_wrist + range_EDA_wrist + sd_wrist_ACC_Z, data=train,
+    trControl = train_control, method = "rf")
+  save(sparse_no_survey_rf, file = 'wrist_rf')
+}
+
 calc_metrics(wrist_rf, test, 5)
 
 ```
 
-```{r Hierarchal Model}
+```{r Hierarchal Model, eval=FALSE}
 # Fixed Effects (survey & subdata variables)
 survey_var<- paste(colnames(survey))
 sub_var <- paste(colnames(sub_data))
@@ -394,53 +353,60 @@ summary(mlm)
 stepAIC(mlm, direction = "backward", trace = TRUE, data = train)
 ```
 
-
-
 # Introduction 
 
-Affect recognition seeks to detect a person’s affective state. One of these states is stress, and long-term stress is known to have severe implications on human health and well-being. This study uses the Wearable Stress and Affect Detection (WESAD) dataset, which was introduced in Schmidt et al. [[1]][Bibliography], and ___ (main results of the modeling or something). 
-
-In conducting this analysis, we aim to determine whether sensor data are useful in predicting stress, and if so, which predictors are most significant when discriminating between stress and amusement. Furthermore, we seek to understand which types of sensor data are most useful in predicting stress, alone or in combination, and to determine if stress can be detected only using the wrist-worn wearable, which is more convenient to wear than a chest-worn device. Finally, we quantify the heterogeneity across individuals in their responses to stress by _____. 
-
-# Literature Review 
+Affect recognition seeks to detect a person’s affective state. One of these states is stress, and long-term stress is known to have severe implications on human health and well-being. This study uses the Wearable Stress and Affect Detection (WESAD) dataset, which was introduced in Schmidt et al. [[1]][Bibliography], and achieves classification accuracies of 86.2% on wrist data and 90.8% on all data for the binary classification problem (stress vs. amusement). In conducting this analysis, we aim to determine whether sensor data are useful in predicting stress, and if so, which predictors are most significant when discriminating between stress and amusement. Furthermore, we seek to understand which types of sensor data are most useful in predicting stress, alone or in combination, and to determine if stress can be detected only using the wrist-worn wearable, which is more convenient to wear than a chest-worn device. Finally, we quantify the heterogeneity across individuals in their responses to stress.
 
 # Data 
 
-The WESAD dataset contains physiological and motion data on 15 test subjects. For this analysis, we used the raw data included in the provided pickle files, which synchronised the high resolution data from the chest-worn wearables and the lower resolution data from the wrist-worn wearables. The chest data, which were all recorded at 700 Hz, includes electrocardiography (ECG) data in mV, electrodermal activity (EDA) in microseconds, electromyography (EMG) data in mV, skin temperature (TEMP) in °C, displacement of the thorax for males and the abdomen for females induced by inhaling or exhaling (RESP) as a percentage, and 3-axis accelerometer (ACC) data in g - the acceleration of gravity. The wrist data includes blood volume pulse (BVP) data, ACC data in 1/64g, EDA in microseconds, and TEMP in °C; BVP was sampled at 64 Hz, ACC was sampled at 32 Hz, and EDA and TEMP were sampled at 4 Hz. 
+For this study, we utilized the Wearable Stress and Affect Detection dataset that contains 63 million samples of raw physiological and motion signal data collected from 15 test subjects. The data was collected using 2 devices: a chest-worn device (RespiBAN) and a wrist-worn device (Empatica E4). The RespiBAN chest data includes electrocardiography (ECG) data in mV, electrodermal activity (EDA) in microseconds, electromyography (EMG) data in mV, skin temperature (TEMP) in °C, displacement of the thorax for males and the abdomen for females induced by inhaling or exhaling (RESP) as a percentage, and 3-axis accelerometer (ACC) data in g - the acceleration of gravity. All RespiBAN data were all recorded at 700 Hz. The E4 wrist data collected includes blood volume pulse (BVP) data (64Hz), ACC data (32Hz), EDA in microseconds (4Hz), and TEMP in °C (4Hz). Each sample also references a label corresponding to the study protocol condition, with each label referring to a different condition (1-baseline, 2-stress, 3-amusement, 4-meditation). These conditions were recorded by having participants exposed to sources of stimulation that would elicit the desired condition. The labels 0, 5, 6, 7  indicate that the data should be ignored. The dataset also included information about each subject, such as height, weight and age, as well as personal responses to PANAS [[2]][Bibliography] and SSSQ questionnaires.
 
-Each sample also contains a label from 0-7 corresponding to the study protocol condition, where 2 refers to stress, and 3 refers to amusement. 1 is the baseline and 4 refers to meditation, but since we are mainly interested in discriminating between stress and amusement, we excluded these categories from our analysis. Samples labeled as 0, 5, 6, 7 should be ignored, and were also excluded from our analysis. 
+Considering the nature of the WESAD dataset and the scope of our study, we decided to filter out samples that did not represent stress or amusement, and standardized sampling rates for all RespiBAN and E4 variables to 4Hz. This not only improved the quality of our dataset but also allowed for more feasible computation with a dataset of reasonable size and standardized windows for multiple variables.
 
-The dataset also included information about each of the subject’s personal characteristics, such as their height and weight, as well as their responses to questionnaires, such as PANAS [[2]][Bibliography].
+# Literature Review
+
+Stress can impact heart rate, blood pressure [[3]][Bibliography], and skin temperature. When a threat is presented, it only takes the brain .9 milliseconds, or 1111 Hz, to shift a body into a full stress response [[4]][Bibliography]. In that time, the brain filters information relevant to our personal safety, redirects energy to only areas that are biologically relevant for survival, and releases stress hormones. While stress can be useful in some situations in that it activates fight-or-flight response and can help us during a dangerous situation, chronic stress can have many negative long-term impacts, even reducing brain mass in some cases.
+
+However, stress is not the only emotion that impacts us physically. In fact, many of our physiological measures change based on our emotional state. [[5]][Bibliography] examine how anger, anxiety, embarrassment, fear, amusement, happiness, and joy have different effects on our cardiovascular, electrodermal, respiratory, and electroencephalographic measures. Specifically, they saw that when patients are amused, heart rate becomes more variable and electrodermal activity, respiration rate and brain activity all increase. 
+
+With more advanced technology these days, studies have shown that changes in emotion can be effectively measured by sensors of physiological data [[6]][Bibliography]. This study found that emotional valence and arousal could all be reliably estimated by using low-cost sensors used to collect data on electroencephalography (EEG), galvanic skin response (GSR), and electromyographic signal (EMG) data.
+
+There has also been research done on the appropriate time intervals to use when measuring different body measures such as motion, respiration, electrodermal activity, and heart rate. Different studies use various sampling rates of the raw signals and window sizes for feature engineering, and it appears that there is no consensus on the best-suited way to choose these values. Arif and Kattan [[7]][Bibliography] used a five second rolling window to analyze ACC data, and Uy et. al. [[8]][Bibliography] also used a five second rolling window for measuring Galvanic Skin Response, Blood Volume Pulse, and Respiratory Variability. Since we found multiple sources using a five-second window for predictors similar to the ones in our dataset, we decided to use this approach as well. 
 
 # Methodology
 
 ## Feature Engineering
 
-The brain takes .9 milliseconds to shift a body into a full stress response, which suggests that these data should be sampled at approximately 1111 Hz to properly identify a state of stress. However, the highest-resolution data is sampled at 700 Hz, which suggests that these data are not granular enough to fully capture a shift to stress. Thus, with computational cost in mind, we downsampled our data to 4Hz. We assigned a unique ID to each of the 15 subjects, and also added their personal characteristics. Since we are primarily interested in differentiating between stress and amusement, we only kept samples that were labeled 2 (stress) or 3 (amusement). We then relabeled amusement as 0 and stress as 1.
+As mentioned earlier, the brain takes .9 milliseconds to shift a body into a full stress response, which suggests that these data should be sampled at approximately 1111 Hz to properly identify a state of stress. However, the highest-resolution data is sampled at 700 Hz, which suggests that these data are not granular enough to fully capture a shift to stress. Thus, with computational cost in mind, we downsampled our data to 4Hz. We assigned a unique ID to each of the 15 subjects, and also added their personal characteristics. Since we are primarily interested in differentiating between stress and amusement, we only kept samples that were labeled 2 (stress) or 3 (amusement). We then relabeled amusement as 0 and stress as 1.   
 
-Next, we calculated features for the different modalities, which are displayed in Table #.  Segmentation of the physiological signals was done using a sliding window, with a window shift of 0.25 seconds. The ACC and physiological features were both calculated with a 5 second window size [[3]][Bibliography] [[4]][Bibliography]. 
+Next, we calculated features for the different modalities.  Segmentation of the physiological signals was done using a sliding window, with a window shift of 0.25 seconds. The ACC and physiological features were both extracted using a 5 second window size [[7]][Bibliography] [[8]][Bibliography]. 
+
+To calculate the respiration variables, we had to separate out inhales and exhales. Inhale data corresponded to respiration values greater than zero and exhale data corresponded to respiration values less than zero. For five-second intervals where someone either did not inhale or exhale, we coded the corresponding observations to equal zero instead of NA. Additionally, we found total respiration range which took both inhale and exhale values into account when calculating the maximums and minimums. Next, we calculated the inhale to exhale ratio by dividing our mean inhale column by our mean exhale column. Since this would have produced some infinite values due to the fact that periods where someone was not exhaling were set to zero, we set these inhale/exhale ratios to equal 10. Additionally, we had a couple of intervals where the inhale/exhale ratio was very large, sometimes even greater than 1500. This was happening because some five-second windows in our data could have consisted of the participant inhaling for most of the time, thus we would be dividing by an extremely low exhale value. So, we re-coded any ratio greater than 10 to equal an upper bound of 10. This is a fair assumption, since it would not be physically possible for someone to inhale incredibly more than they exhale. We next calculated a breath rate by first summing the number of rows in one breath cycle, which is defined as one full inhale and one full exhale. Then, we took this sum and divided it by four, since the observations in our dataset were taken every quarter of a second, to get the time in seconds of one full breath cycle. 
+
+We then calculated the mean, standard deviation, maximum, minimum and range of ACC, inhale, exhale, breath rate, and the other physiological signals; a summary of all predictor variables is given in Table 1. 
+
 
 ```{r}
 features_tbl <- data.frame(
   Metric = c(rep("Chest ACC", 1), rep("Chest ECG", 1), rep("Chest EDA",2), rep("Chest EMG",2), "Chest Resp", "Chest Temp", 
              "Wrist ACC", "Wrist BVP", "Wrist EDA", "Wrist Temp"),
   
-  Features = linebreak(c("Mean ($\\mu^C_{ACC}$), SD ($\\sigma^C_{ACC}$)", 
-               "Mean ($\\mu^C_{ECG}$), SD ($\\sigma^C_{ECG}$), Mean HRV ($\\mu^C_{HRV}$), SD HRV ($\\sigma^C_{HRV}$)", 
-               "Mean ($\\mu^C_{EDA}$), SD ($\\sigma^C_{EDA}$), Min ($Min^C_{EDA}$)", 
-               "Max ($Max^C_{EDA}$), Range ($Range^C_{EDA}$)", 
-               "Mean ($\\mu^C_{EMG}$), SD ($\\sigma^C_{EMG}$), Min ($Min^C_{EMG}$)", 
-               "Max ($Max^C_{EMG}$), Range ($Range^C_{EMG}$)", 
-               "Mean Std Deviation", 
-               "Mean ($\\mu^C_{T}$), SD ($\\sigma^C_{T}$), Min ($Min^C_{T}$), Max ($Max^C_{T}$), Range ($Range^C_{T}$)", 
-               "Mean ($\\mu^W_{ACC}$), SD ($\\sigma^W_{ACC}$)", 
-               "Mean Std Deviation Heart Rate Variability", 
-               "Mean ($\\mu^W_{EDA}$), SD ($\\sigma^W_{EDA}$), Min ($Min^W_{EDA}$), Max ($Max^W_{EDA}$), Range ($Range^C_{EDA}$)", 
-               "Mean ($\\mu^W_{T}$), SD ($\\sigma^W_{T}$), Min ($Min^W_{T}$), Max ($Max^W_{T}$), Range ($Range^W_{T}$)"))
+  Features = linebreak(c("Mean ($\\mu^C_{ACC, i}$), SD ($\\sigma^C_{ACC, i}$), i $\\in {x, y, z, 3D}$", 
+                         "Mean ($\\mu^C_{ECG}$), SD ($\\sigma^C_{ECG}$), Mean HRV ($\\mu^C_{HRV}$), SD HRV ($\\sigma^C_{HRV}$)", 
+                         "Mean ($\\mu^C_{EDA}$), SD ($\\sigma^C_{EDA}$), Min ($Min^C_{EDA}$)", 
+                         "Max ($Max^C_{EDA}$), Range ($Range^C_{EDA}$)", 
+                         "Mean ($\\mu^C_{EMG}$), SD ($\\sigma^C_{EMG}$), Min ($Min^C_{EMG}$)", 
+                         "Max ($Max^C_{EMG}$), Range ($Range^C_{EMG}$)", 
+                         "Mean Std Deviation", 
+                         "Mean ($\\mu^C_{T}$), SD ($\\sigma^C_{T}$), Min ($Min^C_{T}$), Max ($Max^C_{T}$), Range ($Range^C_{T}$)", 
+                         "Mean ($\\mu^W_{ACC}$), SD ($\\sigma^W_{ACC}$)", 
+                         "Mean Std Deviation Heart Rate Variability", 
+                         "Mean ($\\mu^W_{EDA}$), SD ($\\sigma^W_{EDA}$), Min ($Min^W_{EDA}$), Max ($Max^W_{EDA}$), Range ($Range^C_{EDA}$)", 
+                         "Mean ($\\mu^W_{T}$), SD ($\\sigma^W_{T}$), Min ($Min^W_{T}$), Max ($Max^W_{T}$), Range ($Range^W_{T}$)"))
 )
 
 features_tbl %>% 
-  kable("latex", escape=F, booktabs = T,
+  kable(escape=F,   booktabs = T, align = "c",
         caption = "Summary of Sensor Data Categories, with the Extracted Predictors and Respective Symbols",) %>%
   kable_styling(latex_options = c("hold_position")) %>% 
   group_rows(index = c("Chest Sensor Data" = 8, "Wrist Sensor Data" = 4)) %>%
@@ -453,31 +419,226 @@ features_tbl %>%
 
 ## Model Selection 
 
+We first split our data into a 80/20 train/test split, perform 5-fold cross validation on the training data and lastly assess model performance by predicting on the testing data. 
+
+The extracted features serve as predictors for our classification models. We propose two different models, both using different types of sensor data: features from the wrist-worn device, and features from both chest-worn and wrist-worn devices. Since our research goals are concerned with the predictive power and interpretability of our models, logistic regression was chosen over other classification algorithms. To determine our final model, we performed variable selection by first including all relevant features and $participant$ and then used backwards selection with AIC as the selection criterion. Additionally, we iteratively removed variables that had p-values greater than 0.1. Interaction effects with the remaining predictors and $participant$ were fit to determine if they would improve the predictive power of the models. We also noted that the models with the subjects’ personal characteristics did not increase accuracy, F1 score or AUC values, and also led to increased computational cost. Thus, we did not include any personal characteristics in the final models. 
+
+The final models are below (Model 1 was fitted using only the wrist-worn data and Model 2 was fitted using all the sensor data): 
+
+$$
+\begin{aligned}
+&Y_i \sim  Bernoulli(\pi_i) \\
+log(\frac{\pi_i}{1 - \pi_i}) = \beta_0 + \beta_1 \ \sigma^W_{EDA} + &\beta_2 \ \sigma^W_{ACC} + \beta_3 \ \sigma^W_{HRV} \ + \beta_4 \ \sigma^W_{EDA} * \sigma^W_{HRV} \ + \\
+\beta_5 \ \sigma^W_{EDA} * &\sigma^W_{ACC} + \beta_6 \ \sigma^W_{HRV} * \sigma^W_{ACC} \ + \\ 
+\sum_{j=2}^{15}\beta_{7j} \ I(subject_i & = j) \ + \sum_{j=2}^{15} \beta_{8j} \  \sigma^W_{ACC} * I(subject_i = j) , &(1)
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+& \,\,\,\,\,\,\, \,\,\,\,\,\,\,\,\,\,\,\,\,\, \, \, \, \, \, \, \, \,\,\,\,\,\,\, \, \, \, \, \, \, \, \, \, \, Y_i \sim  Bernoulli(\pi_i) \\
+log(\frac{\pi_i}{1 - \pi_i}) = \beta_0 + &\beta_1 \ \mu^C_{ACC} +  \beta_2 \ \sigma^C_{ACC} +  \beta_3 \ \sigma^W_{ACC} + \beta_4 \ \sigma^C_{HR} + \beta_5 \ \sigma^W_{HR} \ + \beta_6 \ \sigma^W_{HRV} \ + \\
+\beta_7 \ rms^C_{HRV} + &\beta_8  \ rms^W_{HRV} + \beta_9  \ \sigma^C_{EDA} \ + \beta_{10} \ \sigma^W_{EDA} + \beta_{11} \ min^C_{EMG} +\beta_{12} \ \sigma_{inhale} \ + \\
+\beta_{13} \ \sigma_{exhale}  + \beta_{14} \ &max_{breath}  +  \beta_{15} \ ie_{ratio} + \beta_{16} \ \sigma^C_{T} +  \beta_{17} \ min^W_{T} + \beta_{18} \ \sigma^C_{EDA}  * min^W_{T} \ + \\ 
+\sum_{j=2}^{15} \beta_{19j} \ I(subject_i = j) & + \sum_{j=2}^{15} \beta_{20j}  \ rms^W_{HRV} * I(subject_i = j) \ +\sum_{j=2}^{15} \beta_{21j}\ \sigma^C_{HR} * I(subject_i = j) , &(2)
+\end{aligned}
+$$
+
+$i$ corresponds to each sample, and $Y_i$ indicates the corresponding state (1 = stress or 0 = amusement). $subject_i$ represents the unique subject ID that was assigned to each of the 15 participants. The reference level for $subject$ is Subject 10 (S10), who had the highest number of samples in the filtered dataset. The remaining levels $j \in (2, 3, \dots, 14, 15)$ correspond to S2, S3, S4, S5, S6, S7, S8, S9, S11, S13, S14, S15, S16 and S17 respectively. The other predictors correspond to those displayed in Table 1.
+
 # Results 
 
-## Testing MSE or something 
-
-## Model Diagnostics 
-
-## Sensitivity Analysis 
-
-```{r}
-#sensitivity analysis with 10 folds --> pretty much the same 
-
-lr_model_final_wrist10_folds <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
-                                sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag,
-                              data = train, trControl = trainControl(method="repeatedcv", number = 10, savePredictions = T), 
+```{r logistic-regression-wrist}
+lr_model_final_wrist <- train(label ~  sd_EDA_wrist + sd_ACC_wrist_mag + sd_heart_rate_variability_wrist_BVP + 
+                                sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + 
+                                sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP + 
+                                participant + participant:sd_ACC_wrist_mag,
+                              data = train, trControl = train_control, 
                               method = "glm",
                               family ="binomial") 
 
+#summary(lr_model_final_wrist$finalModel)
+```
 
-calc_metrics(lr_model_final_wrist10_folds, test, 10) %>%   kable(booktabs = T, 
-        caption = "Parameters obtained with Model 1, with 95\\% Credible Intervals (CI)",
-        col.names = c("Accuracy", "F1-Score", "AUC", "Accuracy", "F1-Score", "AUC"
+```{r full-logistic-model}
+lr_model_final_wrist_chest <- train(label ~ sd_EDA + sd_EDA_wrist + sd_Temp_chest + 
+                                      min_Temp_wrist + min_EMG + sd_inhale + sd_exhale + max_breath + 
+                                      i_e_ratio + mean_ACC_chest_mag + sd_ACC_chest_mag + sd_ACC_wrist_mag + 
+                                      sd_heart_rate_wrist_BVP + sd_heart_rate_variability_wrist_BVP + rms_heart_rate_variability_wrist_BVP + 
+                                      sd_heart_rate_chest_ECG + rms_heart_rate_variability_chest_ECG  + 
+                                      sd_EDA_wrist * min_Temp_wrist + participant +
+                                      rms_heart_rate_variability_wrist_BVP*participant + sd_heart_rate_chest_ECG*participant, # try different interactions 
+                                    data = train, trControl = train_control, 
+                                    method = "glm",
+                                    family ="binomial")
+```
+$f_1$
+
+```{r logistic-regression-metrics}
+final_wrist_lr_model_df <- calc_metrics(lr_model_final_wrist, test, 5)  %>% 
+  mutate(model = "Wrist Only")
+
+final_wrist_chest_lr_model_df <- calc_metrics(lr_model_final_wrist_chest, test, 5) %>% 
+  mutate(model = "Chest & Wrist")
+
+bind_rows(final_wrist_lr_model_df, final_wrist_chest_lr_model_df) %>% 
+  dplyr::select(model, everything()) %>% 
+  kable(booktabs = T, 
+        caption = "Model Results with 5-fold Cross Validation, with Mean and Standard Deviation reported",
+        col.names = c("Model", "Accuracy", "F1-Score", "AUC", "Accuracy", "F1-Score", "AUC"
         )) %>% 
   kable_styling(latex_options = c("hold_position")) %>%
-add_header_above(c("Cross Validation Data" = 3, "Test Data" = 3))
+  add_header_above(c(" " = 1, "Cross Validation Data" = 3, "Test Data" = 3), escape=F)
+#vif(lr_model_final_wrist$finalModel) %>% kable()
 ```
+
+## Wrist-worn Data 
+
+Using only data from the wrist-worn wearable, our model reports an accuracy of `r final_wrist_lr_model_df$Accuracy...4`, an $F_1$-score of `r final_wrist_lr_model_df$F1...5` and an AUC of `r final_wrist_lr_model_df$AUC...6` when predicting on the testing data. This suggests that we can detect stress vs. amusement reasonably well using only the wrist-worn wearable, which may be preferable since a wrist-worn device is minimally intrusive and more convenient than a chest-worn device.
+
+## All Sensor Data  
+
+Using data from both the chest-worn and wrist-worn wearables, our model reports an accuracy of `r final_wrist_chest_lr_model_df$Accuracy...4`, an $F_1$-score of `r final_wrist_chest_lr_model_df$F1...5` and an AUC of `r final_wrist_chest_lr_model_df$AUC...6` when predicting on the testing data. These values suggest that sensor data are useful in discriminating between stress and amusement conditions. These metrics are slightly better than the previous model, which indicates that having data from both the chest-worn and wrist-worn wearables is better than having just data from the wrist-worn device. 
+
+## Model Diagnostics 
+
+```{r full-logistic-model-diagnostics, fig.align="center"}
+#VIF values (measures multi-collinearity)
+#vif(lr_model_final_wrist$finalModel)
+
+#Sensitivity Analysis
+table1 <- tidy(table(tibble("target" = test$label,
+                            "prediction" = predict(lr_model_final_wrist, test))))
+pcm1 <- plot_confusion_matrix(table1, 
+                              targets_col = "target", 
+                              predictions_col = "prediction",
+                              counts_col = "n") + 
+  ggplot2::labs(subtitle = "Wrist Data (Model 1)") + 
+  ggplot2::theme(plot.subtitle = element_text(hjust = 0.5))
+
+
+table2 <- tidy(table(tibble("target" = test$label,
+                            "prediction" = predict(lr_model_final_wrist_chest, test))))
+pcm2 <- plot_confusion_matrix(table2, 
+                              targets_col = "target", 
+                              predictions_col = "prediction",
+                              counts_col = "n") + 
+  ggplot2::labs(subtitle = "Chest & Wrist Data (Model 2)") + 
+  ggplot2::theme(plot.subtitle = element_text(hjust = 0.5))
+
+gridExtra::grid.arrange(pcm1, pcm2, ncol=2, 
+                        top = textGrob("Confusion Matrices",gp=gpar(fontsize=12)))
+```
+
+### Sensitivity Analysis 
+
+Since there is no standard sampling frequency in the literature, we first examine the sensitivity of our sampling rate of 4 Hz. Table 3 displays the results of the wrist data and all data models, with the same predictors as Models 1 and 2, when using data that was sampled at 1 Hz. In general, the models using data sampled at 4 Hz perform better on the training data, while the models using data sampled at 1 Hz perform better on the testing data. There is also higher variability in the metrics of the models using data sampled at 1 Hz - this is because we are using a much smaller sample size, which leads to higher sampling variability. However, the difference in metrics is very minimal; thus we can verify that our results are not highly sensitive to different sampling frequencies. 
+
+```{r eval=FALSE}
+train_1Hz <- train %>%
+  slice(which(row_number() %% 4 == 1))
+test_1Hz <- test %>%
+  slice(which(row_number() %% 4 == 1))
+
+lr_model_final_wrist_1Hz <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
+                                    sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag + 
+                                    sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + 
+                                    sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP,
+                                  data = train_1Hz, trControl = train_control, 
+                                  method = "glm",
+                                  family ="binomial") 
+
+lr_model_final_wrist_chest_1Hz <- train(label ~ participant + sd_EDA + sd_EDA_wrist + sd_Temp_chest + 
+                                          min_Temp_wrist + min_EMG + sd_inhale + sd_exhale + max_breath + 
+                                          i_e_ratio + mean_ACC_chest_mag + sd_ACC_chest_mag + sd_ACC_wrist_mag + 
+                                          sd_heart_rate_wrist_BVP + sd_heart_rate_variability_wrist_BVP + rms_heart_rate_variability_wrist_BVP + 
+                                          sd_heart_rate_chest_ECG + rms_heart_rate_variability_chest_ECG + 
+                                          rms_heart_rate_variability_wrist_BVP*participant + sd_heart_rate_chest_ECG*participant + 
+                                          sd_EDA_wrist * min_Temp_wrist, # try different interactions 
+                                        data = train_1Hz, trControl = train_control, 
+                                        method = "glm",
+                                        family ="binomial")
+```
+
+We also examine assumptions for a logistic regression model. We display binned residual plots for a subset of predictors, for both models. In general, the binned residual plots are not randomly dispersed about 0. This could be due to relatively high multicollinearity, especially with the $participant$ predictor and interactions between $participant$ and other engineered features. We had to include $participant$ in the model to correctly quantify uncertainty of our model coefficients. In addition, adding $participant$ addresses independence at the subject level, but each individual sample is not independent; presumably, a person's heart rate from one second ago affects their current heart rate. 
+
+```{r eval=FALSE}
+final_wrist_lr_model_df_1Hz <- calc_metrics(lr_model_final_wrist_1Hz, test_1Hz, 5) %>% 
+  mutate(model = "Wrist Only")
+
+final_wrist_chest_lr_model_df_1Hz <- calc_metrics(lr_model_final_wrist_chest_1Hz, test_1Hz, 5) %>% 
+  mutate(model = "Chest & Wrist")
+
+bind_rows(final_wrist_lr_model_df_1Hz, final_wrist_chest_lr_model_df_1Hz) %>% 
+  dplyr::select(model, everything()) %>% 
+  kable( booktabs = T,  
+        caption = "Model Results with Data Sampled at 1 Hz",
+        col.names = c("Model", "Accuracy", "F1-Score", "AUC", "Accuracy", "F1-Score", "AUC"
+        )) %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  add_header_above(c(" " = 1, "Cross Validation Data" = 3, "Test Data" = 3))
+#vif(lr_model_final_wrist$finalModel) %>% kable()
+```
+
+
+```{r eval=FALSE}
+# drop in deviance test
+lr_model_final_wrist_v2 <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
+                                   sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag + 
+                                   + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + 
+                                   sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP,
+                                 data = train, trControl = train_control, 
+                                 method = "glm",
+                                 family ="binomial") 
+
+calc_metrics(lr_model_final_wrist_v2, test, 5)
+
+
+anova(lr_model_final_wrist_v2$finalModel, lr_model_final_wrist$finalModel,  test = "Chisq")
+```
+
+
+```{r eval=FALSE}
+#sensitivity analysis with 10 folds --> pretty much the same 
+
+lr_model_final_wrist10_folds <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
+                                        sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag + 
+                                        sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + 
+                                        sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP,
+                                      data = train, trControl = trainControl(method="repeatedcv", number = 10, savePredictions = T), 
+                                      method = "glm",
+                                      family ="binomial") 
+
+lr_model_final_wrist_chest10_folds <- train(label ~ participant + sd_EDA + sd_EDA_wrist + sd_Temp_chest + 
+                                              min_Temp_wrist + min_EMG + sd_inhale + sd_exhale + max_breath + 
+                                              i_e_ratio + mean_ACC_chest_mag + sd_ACC_chest_mag + sd_ACC_wrist_mag + 
+                                              sd_heart_rate_wrist_BVP + sd_heart_rate_variability_wrist_BVP + rms_heart_rate_variability_wrist_BVP + 
+                                              sd_heart_rate_chest_ECG + rms_heart_rate_variability_chest_ECG + 
+                                              rms_heart_rate_variability_wrist_BVP*participant + sd_heart_rate_chest_ECG*participant + 
+                                              sd_EDA_wrist * min_Temp_wrist, # try different interactions 
+                                            data = train, trControl = trainControl(method="repeatedcv", number = 10, savePredictions = T), 
+                                            method = "glm",
+                                            family ="binomial")
+```
+
+```{r eval=FALSE}
+final_wrist_lr_model_df_10 <- calc_metrics(lr_model_final_wrist10_folds, test, 10) %>% 
+  mutate(model = "Wrist Only")
+
+final_wrist_chest_lr_model_df_10 <- calc_metrics(lr_model_final_wrist_chest10_folds, test, 10) %>% 
+  mutate(model = "Chest & Wrist")
+
+bind_rows(final_wrist_lr_model_df_10, final_wrist_chest_lr_model_df_10) %>% 
+  dplyr::select(model, everything()) %>% 
+  kable(booktabs = T, 
+        caption = "Model Results with 10-fold Cross Validation, with Mean and Standard Deviation reported",
+        col.names = c("Model", "Accuracy", "F1-Score", "AUC", "Accuracy", "F1-Score", "AUC"
+        )) %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  add_header_above(c(" " = 1, "Cross Validation Data" = 3, "Test Data" = 3))
+```
+
+We conduct sensitivity analysis by using 10-fold cross validation on our training data. We see that the accuracy, $F_1$, and AUC on the training and testing data are very similar. 
 
 
 # Discussion
@@ -492,6 +653,184 @@ add_header_above(c("Cross Validation Data" = 3, "Test Data" = 3))
 
 2. D. Watson, L. A. Clark and A. Tellegen. (1988). Development and validation of brief measures of positive and negative affect: the PANAS scales. Journal of Personality and Social Psychology, 54, 6, 1063.
 
-3. M. Arif and A. Kattan. (2015). Physical Activities Monitoring Using Wearable Acceleration Sensors Attached to the Body. PLoS ONE 10, 7.
+3. H. Yaribeygi et al. (2017). The impact of stress on body function: A review. EXCLI Journal, 2017, 16, pp. 1057–1072.
 
-4. G. Uy et al. (2013). Correlation of Stress Inducers and Physiological Signals with Continuous Stress Annotations. WCTP 2012, PICT 7, pp. 178–183.
+4. D. Strickland. (2019). .9 Milliseconds. Transitions.
+
+5. L. Shu et al. (2018). A Review of Emotion Recognition Using Physiological Signals. Sensors (Basel), 18, 7.
+
+6. D. Girardi et al. (2017). Emotion Detection Using Noninvasive Low Cost Sensors
+
+7. M. Arif and A. Kattan. (2015). Physical Activities Monitoring Using Wearable Acceleration Sensors Attached to the Body. PLoS ONE 10, 7.
+
+8. G. Uy et al. (2013). Correlation of Stress Inducers and Physiological Signals with Continuous Stress Annotations. WCTP 2012, PICT 7, pp. 178–183.
+
+
+
+```{r rf-using-same-preds-as-wrist-log-model, eval=FALSE}
+
+rf_model_final_wrist <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
+                                sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag + sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP,
+                              data = newtrain, trControl = train_control,
+                              method = "rf", tuneGrid = expand.grid(.mtry=floor(sqrt(34))))
+
+save(rf_model_final_wrist, file = 'rf_model_final_wrist')
+summary(rf_model_final_wrist$finalModel)
+calc_metrics(rf_model_final_wrist, test, 5)
+varImp(rf_model_final_wrist$finalModel)
+```
+
+##  Model Output
+
+### Wrist Data Model 
+
+```{r wrist-log-model-coef}
+lr_model_final_wrist_coef_tidy_df <- lr_model_final_wrist$finalModel %>% 
+  tidy() %>%
+  dplyr::select(-statistic) %>% 
+  bind_rows(tibble(term = c("S10", "$\\sigma^W_{ACC}$ * S10"), 
+                   estimate = c(0,0), `std.error` = c(0,0), `p.value`= c(0,0))) 
+
+
+
+reordered_terms_wrist <- c("(Intercept)", "sd_EDA_wrist", "sd_ACC_wrist_mag",  
+                           "sd_heart_rate_variability_wrist_BVP", "`sd_EDA_wrist:sd_ACC_wrist_mag`",
+                           "`sd_EDA_wrist:sd_heart_rate_variability_wrist_BVP`",
+                           "`sd_ACC_wrist_mag:sd_heart_rate_variability_wrist_BVP`",
+                           "S10", 
+                           "participantS2", "participantS3", "participantS4","participantS5", "participantS6",
+                           "participantS7","participantS8","participantS9","participantS11","participantS13",
+                           "participantS14","participantS15","participantS16","participantS17",
+                           "$\\sigma^W_{ACC}$ * S10",
+                           "`sd_ACC_wrist_mag:participantS2`", "`sd_ACC_wrist_mag:participantS3`",
+                           "`sd_ACC_wrist_mag:participantS4`","`sd_ACC_wrist_mag:participantS5`",
+                           "`sd_ACC_wrist_mag:participantS6`","`sd_ACC_wrist_mag:participantS7`",
+                           "`sd_ACC_wrist_mag:participantS8`","`sd_ACC_wrist_mag:participantS9`",
+                           "`sd_ACC_wrist_mag:participantS11`","`sd_ACC_wrist_mag:participantS13`",
+                           "`sd_ACC_wrist_mag:participantS14`","`sd_ACC_wrist_mag:participantS15`",
+                           "`sd_ACC_wrist_mag:participantS16`","`sd_ACC_wrist_mag:participantS17`"
+                           
+)
+
+wrist_rows <- c("(Intercept)", "$\\sigma^W_{EDA}$", "$\\sigma^W_{ACC}$",  
+                "$\\sigma^W_{HRV}$", "$\\sigma^W_{EDA}$ * $\\sigma^W_{ACC}$",
+                "$\\sigma^W_{EDA}$ * $\\sigma^W_{HRV}$",
+                "$\\sigma^W_{ACC}$ * $\\sigma^W_{HRV}$`",
+                "S10", 
+                "S2", "S3", "S4","S5", "S6",
+                "S7","S8","S9","S11","S13",
+                "S14","S15","S16","S17",
+                "$\\sigma^W_{ACC}$ * S10", 
+                "$\\sigma^W_{ACC}$ * S2", "$\\sigma^W_{ACC}$ * S3",
+                "$\\sigma^W_{ACC}$ * S4","$\\sigma^W_{ACC}$ * S5",
+                "$\\sigma^W_{ACC}$ * S6","$\\sigma^W_{ACC}$ * S7",
+                "$\\sigma^W_{ACC}$ * S8","$\\sigma^W_{ACC}$ * S9",
+                "$\\sigma^W_{ACC}$ * S11","$\\sigma^W_{ACC}$ * S13",
+                "$\\sigma^W_{ACC}$ * S14","$\\sigma^W_{ACC}$ * S15",
+                "$\\sigma^W_{ACC}$ * S16","$\\sigma^W_{ACC}$ * S17"                     
+)
+
+
+lr_model_final_wrist_coef_tidy_df %>% 
+  slice(match(reordered_terms_wrist, term)) %>% 
+  mutate_if(is.numeric, round, digits = 3) %>% 
+  mutate(term = wrist_rows,
+         estimate = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "(Reference)", estimate),
+         `std.error` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", `std.error`),
+         `p.value` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", ifelse(`p.value`  == 0, "< 2e-16", `p.value`))
+  )%>% 
+  kableExtra::kable( booktabs = T,  escape = F, 
+                    caption = "Cofficients obtained with Model 1",
+                    col.names = c("Coefficient", "Estimate", "Std. Error", "p-value")) %>% 
+  kable_styling(latex_options = c("hold_position")) %>% 
+  kableExtra::pack_rows("Participant", 8,22, escape = F) %>% 
+  kableExtra::pack_rows("$\\sigma^W_{ACC}$ * Participant", 23,35, escape = F) 
+```
+
+### All Data Model 
+
+```{r}
+lr_model_final_wrist_chest_coef_tidy_df <- lr_model_final_wrist_chest$finalModel %>% 
+  tidy() %>%
+  dplyr::select(-statistic) %>% 
+  bind_rows(tibble(term = c("S10", "$rms^W_{HRV}$ * S10", "$\\sigma^C_{HR}$ * S10"), 
+                   estimate = c(0,0,0), `std.error` = c(0,0,0), `p.value`= c(0,0,0))) 
+
+reordered_terms_wrist_chest <- c("(Intercept)", "sd_EDA" , "sd_EDA_wrist", "sd_Temp_chest" , 
+                                 "min_Temp_wrist" , "min_EMG" , "sd_inhale" , "sd_exhale" , "max_breath" , "i_e_ratio" , "mean_ACC_chest_mag" ,
+                                 "sd_ACC_chest_mag" , "sd_ACC_wrist_mag" , 
+                                 "sd_heart_rate_wrist_BVP" , "sd_heart_rate_variability_wrist_BVP" , "rms_heart_rate_variability_wrist_BVP",
+                                 "sd_heart_rate_chest_ECG" , "rms_heart_rate_variability_chest_ECG",
+                                 "`sd_EDA_wrist:min_Temp_wrist`",
+                                 "S10", 
+                                 "participantS2", "participantS3", "participantS4","participantS5", "participantS6",
+                                 "participantS7","participantS8","participantS9","participantS11","participantS13",
+                                 "participantS14","participantS15","participantS16","participantS17",
+                                 "$rms^W_{HRV}$ * S10", 
+                                 "`rms_heart_rate_variability_wrist_BVP:participantS2`", "`rms_heart_rate_variability_wrist_BVP:participantS3`",
+                                 "`rms_heart_rate_variability_wrist_BVP:participantS4`","`rms_heart_rate_variability_wrist_BVP:participantS5`",
+                                 "`rms_heart_rate_variability_wrist_BVP:participantS6`",
+                                 "`rms_heart_rate_variability_wrist_BVP:participantS7`","`rms_heart_rate_variability_wrist_BVP:participantS8`",
+                                 "`rms_heart_rate_variability_wrist_BVP:participantS9`","`rms_heart_rate_variability_wrist_BVP:participantS11`",
+                                 "`rms_heart_rate_variability_wrist_BVP:participantS13`",
+                                 "`rms_heart_rate_variability_wrist_BVP:participantS14`","`rms_heart_rate_variability_wrist_BVP:participantS15`",
+                                 "`rms_heart_rate_variability_wrist_BVP:participantS16`","`rms_heart_rate_variability_wrist_BVP:participantS17`",
+                                 "$\\sigma^C_{HR}$ * S10",
+                                 "`sd_heart_rate_chest_ECG:participantS2`", "`sd_heart_rate_chest_ECG:participantS3`",
+                                 "`sd_heart_rate_chest_ECG:participantS4`","`sd_heart_rate_chest_ECG:participantS5`",
+                                 "`sd_heart_rate_chest_ECG:participantS6`",
+                                 "`sd_heart_rate_chest_ECG:participantS7`","`sd_heart_rate_chest_ECG:participantS8`",
+                                 "`sd_heart_rate_chest_ECG:participantS9`","`sd_heart_rate_chest_ECG:participantS11`",
+                                 "`sd_heart_rate_chest_ECG:participantS13`",
+                                 "`sd_heart_rate_chest_ECG:participantS14`","`sd_heart_rate_chest_ECG:participantS15`",
+                                 "`sd_heart_rate_chest_ECG:participantS16`","`sd_heart_rate_chest_ECG:participantS17`"
+)
+
+chest_wrist_rows <- c("(Intercept)", "$\\sigma^C_{EDA}$" , "$\\sigma^W_{EDA}$", "$\\sigma^C_{T}$" , 
+                      "$min^W_{T}$" , "$min^C_{EMG}$" , "$\\sigma_{inhale}$" , "$\\sigma_{exhale}$" , "$max_{breath}$" , "$ ie_{ratio}$" , "$\\mu^C_{ACC}$" ,
+                      "$\\sigma^C_{ACC}$" , "$\\sigma^W_{ACC}$" , 
+                      "$\\sigma^W_{HR}$" , "$\\sigma^W_{HRV}$" , "$rms^W_{HRV}$",
+                      "$\\sigma^C_{HR}$" , "$rms^C_{HRV}$",
+                      "$\\sigma^W_{EDA}$ * $min^W_{T}$",
+                      "S10", 
+                      "S2", "S3", "S4","S5", "S6",
+                      "S7","S8","S9","S11","S13",
+                      "S14","S15","S16","S17",
+                      "$rms^W_{HRV}$ * S10", 
+                      "$rms^W_{HRV}$ * S2", "$rms^W_{HRV}$ * S3",
+                      "$rms^W_{HRV}$ * S4","$rms^W_{HRV}$ * S5",
+                      "$rms^W_{HRV}$ * S6",
+                      "$rms^W_{HRV}$ * S7","$rms^W_{HRV}$ * S8",
+                      "$rms^W_{HRV}$ * S9","$rms^W_{HRV}$ * S11",
+                      "$rms^W_{HRV}$ * S13",
+                      "$rms^W_{HRV}$ * S14","$rms^W_{HRV}$ * S15",
+                      "$rms^W_{HRV}$ * S16","$rms^W_{HRV}$ * S17",
+                      "$\\sigma^C_{HR}$ * S10",
+                      "$\\sigma^C_{HR}$ * S2", "$\\sigma^C_{HR}$ * S3",
+                      "$\\sigma^C_{HR}$ * S4","$\\sigma^C_{HR}$ * S5",
+                      "$\\sigma^C_{HR}$ * S6",
+                      "$\\sigma^C_{HR}$ * S7","$\\sigma^C_{HR}$ * S8",
+                      "$\\sigma^C_{HR}$ * S9","$\\sigma^C_{HR}$ * S11",
+                      "$\\sigma^C_{HR}$ * S13",
+                      "$\\sigma^C_{HR}$ * S14","$\\sigma^C_{HR}$ * S15",
+                      "$\\sigma^C_{HR}$ * S16","$\\sigma^C_{HR}$ * S17"
+)
+
+lr_model_final_wrist_chest_coef_tidy_df %>% 
+  slice(match(reordered_terms_wrist_chest, term)) %>% 
+  mutate_if(is.numeric, round, digits = 3) %>% 
+  mutate(term = chest_wrist_rows,
+         estimate = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10" | term ==  "$\\sigma^C_{HR}$ * S10", "(Reference)", estimate),
+         `std.error` = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10"| term ==  "$\\sigma^C_{HR}$ * S10", "", `std.error`),
+         `p.value` = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10"| term ==  "$\\sigma^C_{HR}$ * S10", "", ifelse(`p.value`  == 0, "< 2e-16", `p.value`))
+  )%>% 
+  kableExtra::kable( booktabs = T, escape = F, 
+                    caption = "Cofficients obtained with Model 1",
+                    col.names = c("Coefficient", "Estimate", "Std. Error", "p-value")) %>% 
+  kable_styling(latex_options = c("hold_position")) %>% 
+  kableExtra::pack_rows("Participant", 20,34, escape = F) %>% 
+  kableExtra::pack_rows("$rms^W_{HRV}$ * Participant", 35,49, escape = F) %>% 
+  kableExtra::pack_rows("$\\sigma^C_{HR}$ * Participant", 50,64, escape = F) 
+```
+
+
