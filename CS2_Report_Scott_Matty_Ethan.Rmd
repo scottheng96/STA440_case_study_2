@@ -167,14 +167,6 @@ calc_metrics = function(model, testing_data, folds) {
 # returns accuracy/F1score/AUC if you run the model using the previous  code
 ```
 
-
-```{r}
-lr_model_final_wrist$pred %>% filter(Resample == "Fold1.Rep1") ->lplp
-
-confusionMatrix(lplp$pred, lplp$obs)$byClass["F1"]
-```
-
-
 ```{r logistic-regression-wrist}
 lr_model_final_wrist <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
                                 sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag + sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP,
@@ -191,18 +183,16 @@ calc_metrics(lr_model_final_wrist, test, 5) %>%   kable(booktabs = T,
 add_header_above(c("Cross Validation Data" = 3, "Test Data" = 3))
 vif(lr_model_final_wrist$finalModel) %>% kable()
 
-rf_model_final_wrist <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag +
-                                sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag,
-                              data = train, trControl = train_control,
-                              method = "rf")
+rf_model_final_wrist <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
+                                sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag + sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP,
+                              data = newtrain, trControl = train_control,
+                              method = "rf", tuneGrid = expand.grid(.mtry=floor(sqrt(34))))
 
 save(rf_model_final_wrist, file = 'rf_model_final_wrist')
 summary(rf_model_final_wrist$finalModel)
 calc_metrics(rf_model_final_wrist, test, 5)
-vif(rf_model_final_wrist$finalModel)
+varImp(rf_model_final_wrist$finalModel)
 
-
-cm(lr_model_final_wrist %>% predict())
 ```
 
 $$
