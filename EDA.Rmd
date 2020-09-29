@@ -8,12 +8,12 @@ output: pdf_document
 ```{r}
 library(tidyverse)
 library(corrplot)
+library(ggplot2)
 ```
 
 ```{r}
 data <- readRDS("final_data.Rds")
 raw_data <- readRDS("chest_and_wrist.Rds")
-data_acc <- readRDS("final_data_acc.Rds")
 ```
 
 ```{r temp-plots-raw}
@@ -113,8 +113,6 @@ pairs.panels(EMG_chest_eng_df[,-c(1,2)],
 )
 ```
 ```{r ACC}
-data_acc$participant <- data_acc$participant...1
-data_acc$label <- data_acc$label...2
 ggplot(data_acc, aes(mean_chest_ACC_X, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram(bindwith=30)
 ggplot(data_acc, aes(sd_chest_ACC_X, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram(bindwith=30)
 
@@ -171,9 +169,9 @@ data$sd_heart_rate_variability_chest_ECG <- ifelse(is.nan(data$sd_heart_rate_var
 
 ggplot(data, aes(mean_heart_rate_chest_ECG, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram()
 ggplot(data, aes(sd_heart_rate_chest_ECG, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram()
-ggplot(data, aes(mean_heart_rate_variability_chest_ECG, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram()
+ggplot(data, aes(mean_heart_rate_variability_chest_ECG, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram(binwidth=2)
 ggplot(data, aes(sd_heart_rate_variability_chest_ECG, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram()
-ggplot(data, aes(rms_heart_rate_variability_chest_ECG, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram()
+ggplot(data, aes(rms_heart_rate_variability_chest_ECG, color = as.factor(label))) + facet_wrap(~participant) + geom_histogram(binsiwth=2)
 
 subset_ecg <- data[c("mean_heart_rate_chest_ECG",
                     "sd_heart_rate_chest_ECG",
@@ -184,5 +182,84 @@ subset_ecg <- data[c("mean_heart_rate_chest_ECG",
 c1 <- cor(subset_ecg)
 corrplot(c1)
 ```
+# EDA plots
 
+```{r}
+require(gridExtra)
+library(cowplot)
+library(psych)
+```
+
+```{r}
+
+EDA_wrist_eng_df <- data %>% 
+  select(participant, label, mean_EDA_wrist:range_EDA_wrist) 
+
+raw_data_mod <- raw_data[!(raw_data$Label==1),]
+
+# chest EDA
+chest_EDA <- raw_data_mod %>% 
+  mutate(row = row_number()) %>% 
+  ggplot(aes(x = row, y = EDA, color = as.factor(Label))) + 
+  geom_line() + 
+  scale_x_discrete(labels = abbreviate) +
+  labs(title = "Chest EDA vs Time by Participant", x="Time", y="EDA (RespiBAN)", caption = "Fig x.x Plot of RespiBAN (Chest) EDA samples collected over time by participant and label (2- stress, 3-amusement)") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  facet_wrap(Participant~. ,  scales = "free")
+
+# wrist EDA
+wrist_EDA <- raw_data_mod %>% 
+  mutate(row = row_number()) %>% 
+  ggplot(aes(x = row, y = EDA_wrist, color = as.factor(Label))) + 
+  geom_line() + 
+  scale_x_discrete(labels = abbreviate) +
+  labs(title = "Wrist EDA vs Time by Participant", x="Time", y="EDA (E4)", caption = "Fig x.x Plot of E4 (Wrist) EDA samples collected over time by participant and label (2- stress, 3-amusement)") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  facet_wrap(Participant~. ,  scales = "free")
+
+# ACC plots
+data_mod <- data[!(data$label==1),]
+
+peak_wrist_ACC_Z_plot <- ggplot(data_mod, aes(peak_wrist_ACC_Z, color = as.factor(label))) + 
+  geom_histogram(bindwith=30) +
+  labs(title = "Histogram of Peak Wrist ACC Z samples by Participant", y="Count",x = "Peak Wrist ACC Z", caption = "Fig x.x Histogram of peak acc wrist samples by participant and label (2- stress, 3-amusement)") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  facet_wrap(~participant)
+
+mean_ACC_chest_mag_plot <- ggplot(data_mod, aes(mean_ACC_chest_mag, color = as.factor(label))) +
+  geom_histogram(bindwith=30) +
+  labs(title = "Histogram of Mean ACC Chest Mag samples by Participant", y="Count", x = "Mean ACC Chest Mag", caption = "Fig x.x Histogram of mean acc chest magnitude samples by participant and label (2- stress, 3-amusement)") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  facet_wrap(~participant)
+```
+
+```{r }
+# Correlation plots
+# wrist EDA correlation
+#can only be saved as png
+pairs.panels(EDA_wrist_eng_df[,-c(1,2)], 
+             method = "pearson", # correlation method
+             hist.col = "#00AFBB",
+             density = TRUE,  # show density plots
+             )
+panel.cor <- function(x, y, ...)
+{
+par(usr = c(0, 1, 0, 1))
+txt <- as.character(format(cor(x, y), digits=2))
+text(0.5, 0.5, txt, cex = 6* abs(cor(x, y)))
+}
+pairs(~ mean_ACC_chest_mag + sd_heart_rate_wrist_BVP +  mean_Temp_wrist + max_EDA_wrist + sd_breath, data = data, upper.panel=panel.cor, main = "Correlation Matrix of Features from Different signal variables")
+```
+
+```{r}
+ggsave("chest_EDA_plot.png",plot =chest_EDA, height =5,width =10, units = 'in')
+ggsave("wrist_EDA_plot.png",plot=wrist_EDA, height =5,width =10, units = 'in')
+wrist_EDA_corr
+ggsave("peak_wrist_ACC_Z_plot.png", plot= peak_wrist_ACC_Z_plot, height =5,width =10, units = 'in')
+ggsave("mean_ACC_chest_mag_plot.png", plot=mean_ACC_chest_mag_plot, height =5,width =10, units = 'in')
+```
+
+```{r}
+peak_wrist_ACC_Z_plot
+```
 
