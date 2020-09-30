@@ -42,7 +42,7 @@ pkgTest("cvms")
 pkgTest("grid")
 pkgTest("gridExtra")
 pkgTest("arm")
-pkgTest("psych")
+pkgTest("png")
 ```
 
 ```{r include=FALSE}
@@ -61,7 +61,7 @@ library(boot)
 library(cvms)
 library(grid)
 library(gridExtra)
-library(psych)
+library(png)
 knitr::opts_chunk$set(echo = FALSE,
                       message = FALSE,
                       warning = FALSE)
@@ -230,7 +230,7 @@ wrist_EDA <- raw_data_mod %>%
   ggplot(aes(x = row, y = EDA_wrist, color = as.factor(Label))) + 
   geom_line() + 
   scale_x_discrete(labels = abbreviate) +
-  labs(title = "Wrist EDA vs Time by Participant", x="Time", y="EDA (E4)", caption = "Fig 1.2 Plot of E4 (Wrist) EDA samples collected over time by \n participant and label (2- stress, 3-amusement)") +
+  labs(title = "Wrist EDA vs Time by Participant", x="Time", y="EDA (E4)", caption = "Fig 2.1 Plot of E4 (Wrist) EDA samples collected over time by \n participant and label (2- stress, 3-amusement)") +
   theme(plot.title = element_text(hjust = 0.5), , plot.caption = element_text(hjust = 0.5)) +
   facet_wrap(Participant~. ,  scales = "free")
 
@@ -238,13 +238,13 @@ wrist_EDA <- raw_data_mod %>%
 
 peak_wrist_ACC_Z_plot <- ggplot(all_data, aes(peak_wrist_ACC_Z, color = as.factor(label))) + 
   geom_histogram(bindwith=30) +
-  labs(title = "Histogram of Peak Wrist ACC Z samples by Participant", y="Count",x = "Peak Wrist ACC Z", caption = "Fig 2.1 Histogram of peak acc wrist samples  \n by participant and label (2- stress, 3-amusement)") +
+  labs(title = "Histogram of Peak Wrist ACC Z samples by Participant", y="Count",x = "Peak Wrist ACC Z", caption = "Fig 2.3 Histogram of peak acc wrist samples  \n by participant and label (2- stress, 3-amusement)") +
   theme(plot.title = element_text(hjust = 0.5), , plot.caption = element_text(hjust = 0.5)) +
   facet_wrap(~participant)
 
 mean_ACC_chest_mag_plot <- ggplot(all_data, aes(mean_ACC_chest_mag, color = as.factor(label))) +
   geom_histogram(bindwith=30) +
-  labs(title = "Histogram of Mean ACC Chest Mag samples by Participant", y="Count", x = "Mean ACC Chest Mag", caption = "Fig 2.2 Histogram of mean acc chest \n magnitude samples by participant and label (2- stress, 3-amusement)") +
+  labs(title = "Histogram of Mean ACC Chest Mag samples by Participant", y="Count", x = "Mean ACC Chest Mag", caption = "Fig 2.4 Histogram of mean acc chest \n magnitude samples by participant and label (2- stress, 3-amusement)") +
   theme(plot.title = element_text(hjust = 0.5), plot.caption = element_text(hjust = 0.5)) +
   facet_wrap(~participant)
 
@@ -264,27 +264,19 @@ Considering the nature of the WESAD dataset and the scope of our study, we decid
 gridExtra::grid.arrange(chest_EDA, wrist_EDA, ncol=2)
 ```
 
-For example, Figure 1.1 and 1.2 show plots of the EDA signal data by participant and by condition (2-stress, 3-amusement), showing different values when the participant experienced different conditions, and this difference is captured both in the chest and wrist data. Since we only took samples for 2 conditions, we could desirably observe a relative equal distribution of samples in both groups. However, raw signal data only provides limited information and difficult interpretability, and therefore from these raw data signals, we performed data and domain-driven feature engineering to generate potential predictor variables for our model that were easily interpretable and well represented the information in the data. We generated x features, equally between all the raw signal variables.
+For example, Figure 2.1 and 2.2 show plots of the EDA signal data by participant and by condition (2-stress, 3-amusement), showing different values when the participant experienced different conditions, and this difference is captured both in the chest and wrist data. Since we only took samples for 2 conditions, we could desirably observe a relative equal distribution of samples in both groups. However, raw signal data only provides limited information and difficult interpretability, and therefore from these raw data signals, we performed data and domain-driven feature engineering to generate potential predictor variables for our model that were easily interpretable and well represented the information in the data. We generated x features, equally between all the raw signal variables.
 
 ```{r fig.width = 12,fig.height = 4}
 gridExtra::grid.arrange(peak_wrist_ACC_Z_plot, mean_ACC_chest_mag_plot, ncol=2)
 ```
 
-Performing exploratory data analysis on the engineered features provided more insightful information related to our study. For example, Figure x.x and x.x are histograms of Peak Wrist ACC Z and Mean ACC Chest Magnitude samples engineering from the raw signal ACC data. From these plots we can observe that these ACC feature values have different distributions based on the different conditions and could potentially be significant in predicting stress or amusement.
+Performing exploratory data analysis on the engineered features provided more insightful information related to our study. For example, Figure 2.3 and 2.4 are histograms of Peak Wrist ACC Z and Mean ACC Chest Magnitude samples engineering from the raw signal ACC data. From these plots we can observe that these ACC feature values have different distributions based on the different conditions and could potentially be significant in predicting stress or amusement.
 
-```{r fig.width = 6,fig.height = 4, fit.title = "Correlation Matrix of features within one signal variable (EDA)", fig.cap="Fig. 3 showing the Correlation Matrix of features within one signal variable (EDA)"}
-# Correlation plots
-# wrist EDA correlation
-#can only be saved as png
-pairs.panels(EDA_wrist_eng_df[,-c(1,2)], 
-             method = "pearson", # correlation method
-             hist.col = "#00AFBB",
-             density = TRUE,  # show density plots
-             main = "Correlation Matrix of Features within EDA signal variable"
-)
+```{r fig.width = 6,fig.height = 4}
+knitr::include_graphics("pairs_panel.png")
 ```
 
-Other interesting insights like potential issues of multicollinearity were observed when plotting correlation matrices of the features. Figure 3 shows features engineered only from EDA and we can see that there exists a high level or collinearity. On the other hand, there was low correlation between features of different signal variables. High collinearity in predictor variables will influence the strategies and thresholds chosen for model selection and interaction effects, which we elaborate further in the paper in relation to our proposed model. 
+Other interesting insights like potential issues of multicollinearity were observed when plotting correlation matrices of the features. Figure 2.5 shows features engineered only from EDA and we can see that there exists a high level or collinearity. On the other hand, there was low correlation between features of different signal variables. High collinearity in predictor variables will influence the strategies and thresholds chosen for model selection and interaction effects, which we elaborate further in the paper in relation to our proposed model. 
 
 
 # Literature Review
@@ -303,7 +295,7 @@ There has also been research done on the appropriate time intervals to use when 
 
 As mentioned earlier, the brain takes .9 milliseconds to shift a body into a full stress response, which suggests that these data should be sampled at approximately 1111 Hz to properly identify a state of stress. However, the highest-resolution data is sampled at 700 Hz, which suggests that these data are not granular enough to fully capture a shift to stress. Thus, with computational cost in mind, we downsampled our data to 4Hz. We assigned a unique ID to each of the 15 subjects, and also added their personal characteristics. Since we are primarily interested in differentiating between stress and amusement, we only kept samples that were labeled 2 (stress) or 3 (amusement). We then relabeled amusement as 0 and stress as 1.   
 
-Next, we calculated features for the different modalities.  Segmentation of the physiological signals was done using a sliding window, with a window shift of 0.25 seconds. The ACC and physiological features were both extracted using a 5 second window size [[7]][Bibliography][[8]][Bibliography]. 
+Next, we calculated features for the different modalities.  Segmentation of the physiological signals was done using a sliding window, with a window shift of 0.25 seconds. The ACC and physiological features were both extracted using a 5 second window size [[7]][Bibliography][[8]][Bibliography]. To calculate some BVP and ECG features, we utilized peak detection algorithms to identify the time between each successive peaks and used the peak intervals to calculate the mean, standard deviation and root-mean squared of heart rate variability within each assigned windows. 
 
 To calculate the respiration variables, we had to separate out inhales and exhales. Inhale data corresponded to respiration values greater than zero and exhale data corresponded to respiration values less than zero. For five-second intervals where someone either did not inhale or exhale, we coded the corresponding observations to equal zero instead of NA. Additionally, we found total respiration range which took both inhale and exhale values into account when calculating the maximums and minimums. Next, we calculated the inhale to exhale ratio by dividing our mean inhale column by our mean exhale column. Since this would have produced some infinite values due to the fact that periods where someone was not exhaling were set to zero, we set these inhale/exhale ratios to equal 10. Additionally, we had a couple of intervals where the inhale/exhale ratio was very large, sometimes even greater than 1500. This was happening because some five-second windows in our data could have consisted of the participant inhaling for most of the time, thus we would be dividing by an extremely low exhale value. So, we re-coded any ratio greater than 10 to equal an upper bound of 10. This is a fair assumption, since it would not be physically possible for someone to inhale incredibly more than they exhale. We next calculated a breath rate by first summing the number of rows in one breath cycle, which is defined as one full inhale and one full exhale. Then, we took this sum and divided it by four, since the observations in our dataset were taken every quarter of a second, to get the time in seconds of one full breath cycle. 
 
@@ -576,13 +568,19 @@ bind_rows(final_wrist_lr_model_df_10, final_wrist_chest_lr_model_df_10) %>%
 
 ## Interpretation of Predictors
 
-In our wrist-only model, the coefficients for standard deviation of wrist electrodermal activity, standard deviation of wrist acceleration, and standard deviation of wrist heart rate variability all suggest that the odds of being stressed increase as these measures increase. However, the negative interaction between standard deviation of wrist electrodermal activity and standard deviation of acceleration suggests that the odds of being stressed don't increase as much when these two measures increase together, holding heart rate variability constant. For a full list of these estimates, please see Table 3. Also, note that these estimates are in terms of the log-odds. 
+In our wrist-only model, the coefficients for standard deviation of wrist EDA, standard deviation of wrist ACC, and standard deviation of wrist HRV all suggest that the odds of being stressed increase as these measures increase. However, the negative interaction between standard deviation of wrist EDA and standard deviation of ACC suggests that the odds of being stressed don't increase as much when these two measures increase together, holding HRV constant. For a full list of these estimates, please see Table 3. Also, note that these estimates are in terms of the log-odds. 
 
+<<<<<<< HEAD
 In the model built with both chest and wrist data, increases in chest standard deviation of electrodermal activity, wrist standard deviation of electrodermal activity, chest standard deviation of temperature, wrist minimum temperature, standard deviation of inhale, maximum breath cycle time, mean of the magnitude of chest acceleration, standard deviation of the magnitude of chest acceleration, standard deviation of the magnitude of wrist acceleration, standard deviation of the magnitude of wrist heart rate, standard deviation of wrist heart rate variability, root mean square of wrist heart rate variability, and root mean square of chest heart rate variability all increase the odds that a person is stressed while holding other variables constant. On the other hand, increases in minimum chest electromyography, standard deviation of exhale, inhale/exhale ratio, and standard deviation of chest heart rate all lead to a decrease in the odds that a person is stressed, keeping other variables constant.  For a full list of these estimates, please see Table 4. Also, note that these estimates are in terms of the log-odds. 
 
 In both models, standard deviation of wrist electrodermal activity has the largest estimate. In the wrist-only model, its estimate is 63.622, and in the wrist and chest model, it is 1993.249. This means that in the wrist model, we expect that an increase of 0.01 in the standard deviation of electrodermal activity will cause the odds that a person is stressed to multiply by $e^{0.63}$, or 1.889 holding all else constant. In the wrist and chest model, we expect that the same increase of 0.01 in the standard deviation of wrist electrodermal activity will cause the odds that a person is stressed to multiply by ${e^19.93}$, or 453,492,822 holding all else constant. In this same model, keeping all other variables constant, a 0.01 increase in the standard deviation of chest electrodermal activity will cause the odds that a person is stressed to multiply by ${e^0.283}$, or 1.328. This suggests that small changes in the standard deviation of electrodermal activity can have very large impacts on the odds that a person is stressed versus amused. As this variability increases, it appears that a given participant is much more likely to be stressed.
+=======
+In the model built with both chest and wrist data, increases in chest standard deviation of EDA, wrist standard deviation of EDA, chest standard deviation of temperature, wrist minimum temperature, standard deviation of inhale, maximum breath cycle time, mean chest ACC, standard deviation of chest ACC, standard deviation of wrist ACC, standard deviation of wrist HR, standard deviation of wrist HRV, root mean square of wrist HRV, and root mean square of chest HRV all increase the odds that a person is stressed while holding other variables constant. On the other hand, increases in minimum chest EMG, standard deviation of exhale, inhale/exhale ratio, and standard deviation of chest HR all lead to a decrease in the odds that a person is stressed, keeping other variables constant.  For a full list of these estimates, please see Table 4. Also, note that these estimates are in terms of the log-odds. 
 
-We also see a very large negative estimate for the interaction effect between the standard deviation of wrist electrodermal activity and minimum wrist temperature. The estimate of -57.13 implies that for a 0.01 increase in standard deviation of wrist electrodermal activity and an increase of 1 in minimum wrist temperature, we would expect the odds of being stressed versus amused to multiply by $e^{0.604 + 19.932 - 0.5713}$, or 468,567,160, keeping all other variables constant. 
+In both models, standard deviation of wrist EDA has the largest estimate. In the wrist-only model, its estimate is 63.622, and in the wrist and chest model, it is 1993.249. This means that in the wrist model, we expect that an increase of 0.01 in the standard deviation of EDA will cause the odds that a person is stressed to multiply by $e^0.63622$, or 1.889 holding all else constant. In the wrist and chest model, we expect that the same increase of 0.01 in the standard deviation of wrist EDA will cause the odds that a person is stressed to multiply by $e^19.932$, or 453,492,822 holding all else constant. In this same model, keeping all other variables constant, a 0.01 increase in the standard deviation of chest EDA will cause the odds that a person is stressed to multiply by $e^0.283$, or 1.328. This suggests that small changes in the standard deviation of EDA can have very large impacts on the odds that a person is stressed versus amused. As this variability increases, it appears that a given participant is much more likely to be stressed.
+>>>>>>> 68b6bfe4151c34887201746a5fe2b323a6f940ec
+
+We also see a very large negative estimate for the interaction effect between the standard deviation of wrist EDA and minimum wrist temperature. The estimate of -57.13 implies that for a 0.01 increase in standard deviation of wrist EDA and an increase of 1 in minimum wrist temperature, we would expect the odds of being stressed versus amused to multiply by $e^{0.604 + 19.932 - 0.5713}$, or 468,567,160, keeping all other variables constant. 
 
 It is also interesting to note that in the model built with chest and wrist data, most of our predictors appear to be standard deviation measures, and in the wrist-only model, participant is the only non-standard deviation predictor. This observation suggests that the variability in physiological signals is a more important distinguisher of stress and amusement as opposed to the magnitude of these signals in many cases. 
 
