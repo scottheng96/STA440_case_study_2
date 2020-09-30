@@ -1,7 +1,7 @@
 ---
 title: "Detecting Stress Using Wearables"
 author: "Matty Pahren, Scott Heng On, Ethan Shen"
-fontsize: 12pt
+fontsize: 11pt
 geometry: "left=1.3cm,right=1.3cm,top=1.3cm,bottom=1.3cm"
 indent: true
 header-includes:
@@ -609,7 +609,9 @@ Although some variation between subjects is expected, within both models, we see
 While we were able to distinguish between stress and amusement conditions fairly well with our model, it is worth pointing out some limitations. First, we only had data for the 15 participants in this study, and participant ID is an important predictor in our models, so we are unable to generalize the likelihood of being stressed or amused to the people in the population. Also, since all of the data was collected in one sitting during an experiment, our data is very highly correlated and  suggests there is heterogeneity across individuals’ responses to stress vs. amusement. We can distinguish between stress and amusement in this controlled laboratory setting, but we can't generalize about the differences in these emotions in a person's day-to-day life, or what stress and amusement might even look like if the measurements were taken on a different day.
 Since it appears that the wrist wearable is sufficient for detecting stress versus amusement in the laboratory setting, further research could study wrist data for individuals over a long time period, perhaps a day or even a week, and see if different emotions are still distinguishable. Also, studies could be done with a larger random sample of individuals to try and see if there are any findings about stressed versus amused physiological responses generalizable to all individuals instead of just at the participant level. 
 
-# Bibliography
+# Appendix
+
+## Bibliography
 
 1. P. Schmidt et al. (2018). Introducing WESAD, a Multimodal Dataset for Wearable Stress and Affect Detection. Proceedings of the 2018 on International Conference on Multimodal Interaction - ICMI 18.
 
@@ -626,8 +628,6 @@ Since it appears that the wrist wearable is sufficient for detecting stress vers
 7. M. Arif and A. Kattan. (2015). Physical Activities Monitoring Using Wearable Acceleration Sensors Attached to the Body. PLoS ONE 10, 7.
 
 8. G. Uy et al. (2013). Correlation of Stress Inducers and Physiological Signals with Continuous Stress Annotations. WCTP 2012, PICT 7, pp. 178–183.
-
-# Appendix
 
 ##  Model Output
 
@@ -784,7 +784,7 @@ lr_model_final_wrist_chest_coef_tidy_df %>%
          `p.value` = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10"| term ==  "$\\sigma^C_{HR}$ * S10", "", ifelse(`p.value`  == 0, "< 2e-16", `p.value`))
   )%>% 
   kableExtra::kable( booktabs = T, escape = F, 
-                     caption = "Cofficients obtained with Model 2 (Chest & Wrist Model)",
+                     caption = "Cofficients obtained with  Model 2 (Chest and Wrist Model)",
                      col.names = c("Coefficient", "Estimate", "Std. Error", "p-value")) %>% 
   kable_styling(latex_options = c("hold_position")) %>% 
   kableExtra::pack_rows("Participant", 20,34, escape = F) %>% 
