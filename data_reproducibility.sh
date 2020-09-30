@@ -4,6 +4,8 @@
 #SBATCH -N1
 #SBATCH -c1
 #SBATCH --mem=4G
+#SBATCH --mail-type=end
+#SBATCH --mail-user=es321@duke.edu
 
 ##########################################################
 
