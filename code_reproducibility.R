@@ -20,11 +20,13 @@ pkgTest("tidyverse")
 pkgTest("caret")
 pkgTest("MASS")
 pkgTest("cvAUC")
+pkgTest("broom")
 
 library(tidyverse)
 library(caret)
 library(MASS)
 library(cvAUC)
+library(broom)
 
 # Load Data
 
