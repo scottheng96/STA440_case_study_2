@@ -225,7 +225,7 @@ chest_EDA <- raw_data_mod %>%
   geom_line() + 
   scale_x_discrete(labels = abbreviate) +
   labs(title = "Chest EDA vs Time by Participant", x="Time", y="EDA (RespiBAN)", color = "Label", caption = "Fig 1.1 Plot of RespiBAN (Chest) EDA samples collected over \n time by participant and label (2- stress, 3-amusement)") +
-  theme(plot.title = element_text(hjust = 0.5), , plot.caption = element_text(hjust = 0.5)) +
+  theme(plot.title = element_text(hjust = 0.5), plot.caption = element_text(hjust = 0.5)) +
   facet_wrap(Participant~. ,  scales = "free")
 
 # wrist EDA
@@ -248,8 +248,8 @@ peak_wrist_ACC_Z_plot <- ggplot(all_data %>% mutate(label = case_when(
     label == 1 ~ "Stress", 
     label == 0 ~ "Amusement"
   ))  , aes(peak_wrist_ACC_Z, color = as.factor(label))) + 
-  geom_histogram(bindwith=30) +
-  labs(title = "Histogram of Peak Wrist ACC Z samples by Participant", y="Count",x = "Peak Wrist ACC Z", caption = "Fig 2.3 Histogram of peak acc wrist samples  \n by participant and label (2- stress, 3-amusement)", color = "Label",) +
+  geom_histogram(binwith=30) +
+  labs(title = "Histogram of Peak Wrist ACC Z samples by Participant", y="Count",x = "Peak Wrist ACC Z", caption = "Fig 2.3 Histogram of peak acc wrist samples  \n by participant and label (2- stress, 3-amusement)", color = "Label") +
   theme(plot.title = element_text(hjust = 0.5), , plot.caption = element_text(hjust = 0.5)) +
   facet_wrap(~participant)
 
@@ -257,8 +257,8 @@ mean_ACC_chest_mag_plot <- ggplot(all_data%>% mutate(label = case_when(
     label == 1 ~ "Stress", 
     label == 0 ~ "Amusement"
   )) , aes(mean_ACC_chest_mag, color = as.factor(label))) +
-  geom_histogram(bindwith=30) +
-  labs(title = "Histogram of Mean ACC Chest Mag samples by Participant", y="Count", x = "Mean ACC Chest Mag", caption = "Fig 2.4 Histogram of mean acc chest \n magnitude samples by participant and label (2- stress, 3-amusement)", color = "Label",) +
+  geom_histogram(binwith=30) +
+  labs(title = "Histogram of Mean ACC Chest Mag samples by Participant", y="Count", x = "Mean ACC Chest Mag", caption = "Fig 2.4 Histogram of mean acc chest \n magnitude samples by participant and label (2- stress, 3-amusement)", color = "Label") +
   theme(plot.title = element_text(hjust = 0.5), plot.caption = element_text(hjust = 0.5)) +
   facet_wrap(~participant)
 
