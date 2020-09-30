@@ -38,7 +38,7 @@ python data.py
 # Step 2: Combining Separate csv files to RDS files
 # Output: 3 RDS (chest_and_wrist.Rds, chest.Rds, wrist.Rds)
 # Output Location: ./output_data
-module load R/3.6.3
+module load R/3.6.0
 Rscript data-processing.R
 
 # Step 3: Feature Engineering from raw signal data RDS files
@@ -49,5 +49,5 @@ Rscript data-processing.R
 # Running this R script requires the 'peakPick' package, which is not available on the cluster
 # Thus a saved RDS file from a pre-ran script is used for the study
 
-# module load R/4.0.0
-# Rscript data-feature-engineering.R
+module load R/3.6.0
+Rscript data-feature-engineering.R
