@@ -136,12 +136,12 @@ final_wrist_lr_model_df <- calc_metrics(lr_model_final_wrist, test, 5)  %>%
   mutate(Model = "Wrist Only") 
 colnames(final_wrist_lr_model_df) <- goal_colnames
 
-  # rename("Train Accuracy"= `Accuracy...1`,
-  #        "Train F1 Score" = `F1...2`,
-  #        "Train AUC"  = `AUC...3`,
-  #        "Test Accuracy" = `Accuracy...4`,
-  #        "Test F1 Score" = `F1...5`,
-  #        "Test AUC" = `AUC...6`)
+# rename("Train Accuracy"= `Accuracy...1`,
+#        "Train F1 Score" = `F1...2`,
+#        "Train AUC"  = `AUC...3`,
+#        "Test Accuracy" = `Accuracy...4`,
+#        "Test F1 Score" = `F1...5`,
+#        "Test AUC" = `AUC...6`)
 final_wrist_chest_lr_model_df <- calc_metrics(lr_model_final_wrist_chest, test, 5) %>% 
   mutate(Model = "Chest & Wrist")
 colnames(final_wrist_chest_lr_model_df) <- goal_colnames
@@ -156,8 +156,36 @@ print("Similarly, the first row outputs metrics for the chest & wrist model, and
 bind_rows(final_wrist_chest_lr_model_df, final_wrist_lr_model_df) %>% 
   dplyr::select(Model, "Test Accuracy", "Test F1 Score","Test AUC")
 
+print("These tables quantify heterogeneity among the individuals (5th goal).")
+lr_model_final_wrist_coef_tidy_df <- lr_model_final_wrist$finalModel %>% 
+  tidy() %>%
+  dplyr::select(-statistic)  
 
-## STILL NEED TO QUANTIFY HETEROGENEITY
+print("These are the coefficients from the wrist model. These are the log odds and odds for the participant predictor, and interaction term of participant and standard deviation of the magnitude of wrist ACC. Certain odds, such as sd_ACC_wrist_mag:S7, which has a value of 49185, are very large.")
+lr_model_final_wrist_coef_tidy_df %>% 
+  filter(term %in% lr_model_final_wrist_coef_tidy_df$term[str_detect(lr_model_final_wrist_coef_tidy_df$term, "participant")] ) %>% 
+  mutate(`Log Odds` = estimate,
+         Odds = exp(`Log Odds`)) %>% 
+  dplyr::select(term, `Log Odds`, Odds) %>% 
+  mutate(term = str_remove_all(term, "participant"),
+         term = str_remove_all(term, "`")) %>% 
+  print(as_tibble(), n = 100)
+
+lr_model_final_wrist_chest_coef_tidy_df <- lr_model_final_wrist_chest$finalModel %>% 
+  tidy() %>%
+  dplyr::select(-statistic)  
+
+print("These are the coefficients from the chest & wrist model. These are the log odds and odds for the participant predictor, the interaction term of participant and standard deviation of chest HR, and the interaction term of participant and root mean squared of wrist HRV. Certain odds, such as sd_heart_rate_chest_ECG:S11, which has a value of 529302, are very large.")
+
+lr_model_final_wrist_chest_coef_tidy_df %>% 
+  filter(term %in% lr_model_final_wrist_chest_coef_tidy_df$term[str_detect(lr_model_final_wrist_chest_coef_tidy_df$term, "participant")] ) %>% 
+  mutate(`Log Odds` = estimate,
+         Odds = exp(`Log Odds`)) %>% 
+  dplyr::select(term, `Log Odds`, Odds) %>% 
+  mutate(term = str_remove_all(term, "participant"),
+         term = str_remove_all(term, "`")) %>% 
+  print(as_tibble(), n = 100)
+
 
 
 
