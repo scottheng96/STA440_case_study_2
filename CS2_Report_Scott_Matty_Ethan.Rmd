@@ -781,9 +781,9 @@ lr_model_final_wrist_coef_tidy_df %>%
          estimate = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "(Reference)", estimate),
          `std.error` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", `std.error`),
          `p.value` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", ifelse(`p.value`  == 0, "< 2e-16", `p.value`))
-  )%>% 
+  ) %>% 
   kableExtra::kable( booktabs = T,  escape = F, 
-                     caption = "Cofficients obtained with Model 1",
+                     caption = "Cofficients obtained with Model 1 (Wrist Model)",
                      col.names = c("Coefficient", "Estimate", "Std. Error", "p-value")) %>% 
   kable_styling(latex_options = c("hold_position")) %>% 
   kableExtra::pack_rows("Participant", 8,22, escape = F) %>% 
@@ -796,17 +796,16 @@ lr_model_final_wrist_coef_tidy_df %>%
 lr_model_final_wrist_coef_tidy_df %>% 
   filter(term %in% lr_model_final_wrist_coef_tidy_df$term[str_detect(lr_model_final_wrist_coef_tidy_df$term, "participant")] 
   ) %>% 
-  mutate(rownum = c(1:14,  1:14)) %>% 
-  group_by(rownum) %>% 
-  mutate(`Log Odds` = sum(estimate),
+  mutate(`Log Odds` = estimate,
          Odds = exp(`Log Odds`)) %>% 
-  arrange(desc(Odds)) %>% 
-  filter(row_number() %% 2 == 1) %>% 
-  ungroup() %>% 
   dplyr::select(term, `Log Odds`, Odds) %>% 
-  mutate(term = str_remove_all(term, "participant")) %>% 
-  rename(Participant = term) %>% 
-  mutate_if(is.double, round, digits = 3)
+  mutate(term = str_remove_all(term, "participant"),
+         term = str_remove_all(term, "`"),
+         term = str_replace_all(term, pattern = "sd_ACC_wrist_mag:", replacement = "$\\\\sigma^W_{ACC}$ * ")) %>%
+  mutate_if(is.double, round, digits = 3) %>%
+  kableExtra::kable(booktabs = T,  escape = F, 
+                     caption = "Cofficients obtained with Model 1 - Quantifying Hetereogeneity") %>% 
+  kable_styling(latex_options = c("hold_position")) 
 ```
 
 
@@ -885,7 +884,7 @@ lr_model_final_wrist_chest_coef_tidy_df %>%
          `p.value` = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10"| term ==  "$\\sigma^C_{HR}$ * S10", "", ifelse(`p.value`  == 0, "< 2e-16", `p.value`))
   )%>% 
   kableExtra::kable( booktabs = T, escape = F, 
-                     caption = "Cofficients obtained with Model 1",
+                     caption = "Cofficients obtained with Model 2 (Chest & Wrist Model)",
                      col.names = c("Coefficient", "Estimate", "Std. Error", "p-value")) %>% 
   kable_styling(latex_options = c("hold_position")) %>% 
   kableExtra::pack_rows("Participant", 20,34, escape = F) %>% 
@@ -910,6 +909,22 @@ lr_model_final_wrist_chest_coef_tidy_df %>%
   mutate(term = str_remove_all(term, "participant")) %>% 
   rename(Participant = term) %>% 
   mutate_if(is.double, round, digits = 3)
+
+
+lr_model_final_wrist_chest_coef_tidy_df %>% 
+  filter(term %in% lr_model_final_wrist_chest_coef_tidy_df$term[str_detect(lr_model_final_wrist_chest_coef_tidy_df$term, "participant")] 
+  ) %>% 
+  mutate(`Log Odds` = estimate,
+         Odds = exp(`Log Odds`)) %>% 
+  dplyr::select(term, `Log Odds`, Odds) %>% 
+  mutate(term = str_remove_all(term, "participant"),
+         term = str_remove_all(term, "`"),
+         term = str_replace_all(term, pattern = "rms_heart_rate_variability_wrist_BVP:", replacement = "$rms^W_{HRV}$ * "),
+         term = str_replace_all(term, pattern = "sd_heart_rate_chest_ECG:", replacement = "$\\\\sigma^C_{HR}$ * ")) %>%
+  mutate_if(is.double, round, digits = 3) %>%
+  kableExtra::kable(booktabs = T,  escape = F, 
+                     caption = "Cofficients obtained with Model 2 - Quantifying Hetereogeneity") %>% 
+  kable_styling(latex_options = c("hold_position")) 
 ```
 
 
