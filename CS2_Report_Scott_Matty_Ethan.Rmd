@@ -286,7 +286,7 @@ gridExtra::grid.arrange(peak_wrist_ACC_Z_plot, mean_ACC_chest_mag_plot, ncol=2)
 
 Performing exploratory data analysis on the engineered features provided more insightful information related to our study. For example, Figure 2.3 and 2.4 are histograms of Peak Wrist ACC Z and Mean ACC Chest Magnitude samples engineering from the raw signal ACC data. From these plots we can observe that these ACC feature values have different distributions based on the different conditions and could potentially be significant in predicting stress or amusement.
 
-```{r fig.width = 6,fig.height = 4}
+```{r out.width="50%", fig.align= 'center'}
 knitr::include_graphics("pairs_panel.png")
 ```
 
@@ -434,7 +434,7 @@ Using data from both the chest-worn and wrist-worn wearables, our model reports 
 
 ## Model Diagnostics 
 
-```{r full-logistic-model-diagnostics, fig.align="center"}
+```{r full-logistic-model-diagnostics, fig.align="center", fig.width = 6, fig.height = 3}
 #VIF values (measures multi-collinearity)
 #vif(lr_model_final_wrist$finalModel)
 #Sensitivity Analysis
@@ -455,7 +455,7 @@ pcm2 <- plot_confusion_matrix(table2,
   ggplot2::labs(subtitle = "Chest & Wrist Data (Model 2)") + 
   ggplot2::theme(plot.subtitle = element_text(hjust = 0.5))
 gridExtra::grid.arrange(pcm1, pcm2, ncol=2, 
-                        top = textGrob("Confusion Matrices",gp=gpar(fontsize=12)))
+                        bottom = textGrob("Figure 5.3 Confusion Matrices on Model Predictive Accuracy for model trained on only  \n wrist data and wrist and chest data combined", gp = gpar(fontsize = 6)))
 ```
 
 ### Sensitivity Analysis 
@@ -907,6 +907,9 @@ varImp(rf_model_final_wrist$finalModel)
 ```
 
 ## Multilevel Model
+
+Another method we tried was using a multilevel model (MLM) with the features engineered from the raw signal data being the random effects of the model, while survey and participant-specific data as the fixed effects. One large issue with running MLM was the computational intensity it took after including more than 2 fixed effects and 4 random effects. Considering the number of predictor variables we wished to include and analyze, we decided that it was not feasible to run an MLM code 
+
 ```{r Hierarchal Model, eval=FALSE}
 # Fixed Effects (survey & subdata variables)
 survey_var<- paste(colnames(survey))
@@ -921,6 +924,7 @@ mlm <- lmer(mlm_formula, data = train, REML=FALSE,control = lmerControl(check.no
 summary(mlm)
 stepAIC(mlm, direction = "backward", trace = TRUE, data = train)
 ```
+
 
 
 
