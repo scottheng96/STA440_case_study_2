@@ -286,7 +286,7 @@ gridExtra::grid.arrange(peak_wrist_ACC_Z_plot, mean_ACC_chest_mag_plot, ncol=2)
 
 Performing exploratory data analysis on the engineered features provided more insightful information related to our study. For example, Figure 2.3 and 2.4 are histograms of Peak Wrist ACC Z and Mean ACC Chest Magnitude samples engineering from the raw signal ACC data. From these plots we can observe that these ACC feature values have different distributions based on the different conditions and could potentially be significant in predicting stress or amusement.
 
-```{r fig.width = 6,fig.height = 4}
+```{r out.width="50%", fig.align= 'center'}
 knitr::include_graphics("pairs_panel.png")
 ```
 
@@ -434,7 +434,7 @@ Using data from both the chest-worn and wrist-worn wearables, our model reports 
 
 ## Model Diagnostics 
 
-```{r full-logistic-model-diagnostics, fig.align="center"}
+```{r full-logistic-model-diagnostics, fig.align="center", fig.width = 6, fig.height = 3}
 #VIF values (measures multi-collinearity)
 #vif(lr_model_final_wrist$finalModel)
 #Sensitivity Analysis
@@ -455,7 +455,7 @@ pcm2 <- plot_confusion_matrix(table2,
   ggplot2::labs(subtitle = "Chest & Wrist Data (Model 2)") + 
   ggplot2::theme(plot.subtitle = element_text(hjust = 0.5))
 gridExtra::grid.arrange(pcm1, pcm2, ncol=2, 
-                        top = textGrob("Confusion Matrices",gp=gpar(fontsize=12)))
+                        bottom = textGrob("Figure 5.3 Confusion Matrices on Model Predictive Accuracy for model trained on only  \n wrist data and wrist and chest data combined", gp = gpar(fontsize = 6)))
 ```
 
 ### Sensitivity Analysis 
@@ -596,11 +596,11 @@ It is also interesting to note that in the model built with chest and wrist data
 
 In the wrist only model, when compared to the baseline S10 and holding all else constant, we expect the odds of being  stressed for S17 to multiply by $e^{0.256}$, or 1.29, while we expect the odds of being stressed for S7 to multiply by $e^{-5.765}$, or 0.003, and the odds of being stressed for S3 to multiply by $e^{-4.34}$, or 0.013.
 
-For the  sdWACC, when compared to the baseline S10 and holding all else constant,  as SD of ACC magnitude increases by one unit, we expect the odds of being stressed for S7 to multiply by $e^{10.803}$, or 49168.08 more and the odds of being stressed for S5 to multiply by $e^{6.297}$, or 542.9 more. 
+For the standard deviation of wrist ACC, when compared to the baseline S10 and holding all else constant,  as the standard deviation of wrist ACCincreases by one, we expect the odds of being stressed for S7 to multiply by $e^{10.803}$, or 49168.08 more and the odds of being stressed for S5 to multiply by $e^{6.297}$, or 542.9 more. 
 
 In the all data model, when compared to the baseline S10 and holding all else constant, we expect the odds of being stressed for S8 to multiply by $e^{0.413}$, or 1.51, and the odds of being stressed for S15 to multiply by $e^{0.178}$, or 1.19, while we  expect the odds of being stressed for the other 12 subjects to multiply by a value less than 1. 
 
-For the sdCHR, when compared to the baseline S10 and holding all else constant, as HR increases by one unit, we expect the odds of being stressed for S11 to multiply by $e^{13.179}$, or 529135.6 more and the odds of being  stressed for S17 to multiply by $e^{8.979}$, or 7934.7 more; conversely, as HR increases by one unit, we expect the odds of being stressed for S8 to multiply by $e^{-4.834}$, or 0.008.
+For the standard deviation of wrist HR, when compared to the baseline S10 and holding all else constant, as the standard deviation of wrist HR increases by one, we expect the odds of being stressed for S11 to multiply by $e^{13.179}$, or 529135.6 more and the odds of being  stressed for S17 to multiply by $e^{8.979}$, or 7934.7 more; conversely, as the standard deviation of wrist HR increases by one, we expect the odds of being stressed for S8 to multiply by $e^{-4.834}$, or 0.008.
 
 Although some variation between subjects is expected, within both models, we see large variability among the odds of being stressed. These results indicate that there is heterogeneity across individuals’ responses to stress vs. amusement. Overall, although we only see the differences between S10 vs. other subjects (but not S2 vs. S3 for example), the disparity in the odds of being stressed across the 15 participants is pretty apparent. This could also be due to model instability or a small number of participants - a larger pool of participants could reduce heterogeneity and variability between the estimates. 
 
@@ -907,6 +907,9 @@ varImp(rf_model_final_wrist$finalModel)
 ```
 
 ## Multilevel Model
+
+Another method we tried was using a multilevel model (MLM) with the features engineered from the raw signal data being the random effects of the model, while survey and participant-specific data as the fixed effects. One large issue with running MLM was the computational intensity it took after including more than 2 fixed effects and 4 random effects. Considering the number of predictor variables we wished to include and analyze, we decided that it was not feasible to run an MLM code 
+
 ```{r Hierarchal Model, eval=FALSE}
 # Fixed Effects (survey & subdata variables)
 survey_var<- paste(colnames(survey))
@@ -921,6 +924,7 @@ mlm <- lmer(mlm_formula, data = train, REML=FALSE,control = lmerControl(check.no
 summary(mlm)
 stepAIC(mlm, direction = "backward", trace = TRUE, data = train)
 ```
+
 
 
 
