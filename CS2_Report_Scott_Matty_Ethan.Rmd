@@ -609,92 +609,6 @@ Although some variation between subjects is expected, within both models, we see
 While we were able to distinguish between stress and amusement conditions fairly well with our model, it is worth pointing out some limitations. First, we only had data for the 15 participants in this study, and participant ID is an important predictor in our models, so we are unable to generalize the likelihood of being stressed or amused to the people in the population. Also, since all of the data was collected in one sitting during an experiment, our data is very highly correlated and  suggests there is heterogeneity across individuals’ responses to stress vs. amusement. We can distinguish between stress and amusement in this controlled laboratory setting, but we can't generalize about the differences in these emotions in a person's day-to-day life, or what stress and amusement might even look like if the measurements were taken on a different day.
 Since it appears that the wrist wearable is sufficient for detecting stress versus amusement in the laboratory setting, further research could study wrist data for individuals over a long time period, perhaps a day or even a week, and see if different emotions are still distinguishable. Also, studies could be done with a larger random sample of individuals to try and see if there are any findings about stressed versus amused physiological responses generalizable to all individuals instead of just at the participant level. 
 
-# Appendix
-
-## Random Forest Model
-
-```{r random-forests, eval=FALSE}
-set.seed(20200922)
-forest_data <- all_data %>% 
-  subset(dplyr::select = -c(PANAS_Angry, PANAS_Irritated, SSSQ_Committed, SSSQ_Succeed, SSSQ_Motivated, SSSQ_Reflected, SSSQ_Concerned, SSSQ_Worried, Condition, PANAS_Sad))
-forest_data <- forest_data[1:(length(forest_data)-1)]
-forest_data <- forest_data %>%
-  mutate(participant = as.factor(participant),
-         Age = as.numeric(Age),
-         Hand = as.factor(`Dominant hand`),
-         Gender = as.factor(Gender),
-         Height = as.numeric(`Height (cm)`),
-         Weight = as.numeric(`Weight (kg)`))
-forest_data <- forest_data %>% 
-  subset(dplyr::select = -c(`Dominant hand`, `Height (cm)`, `Weight (kg)`))
-idx = createDataPartition(forest_data$label, p = 0.8, list = FALSE)
-train = forest_data[idx, ]
-test = forest_data[-idx, ]
-correlationMatrix <- cor(subset(forest_data, dplyr::select = -c(Gender, Hand, participant, label)))
-highlyCorrelated <- findCorrelation(correlationMatrix, cutoff=0.5, verbose = FALSE)
-require(caTools)
-
-sparse_no_survey_rf <- randomForest(
-  label ~ participant +  max_EDA_wrist + sd_ACC_chest_mag, data=train)
-round(importance(sparse_no_survey_rf), 2)
-pred = predict(sparse_no_survey_rf, newdata=test)
-cm=table(test$label, pred)
-cm
-misclass_rate = (64+27)/(4339+64+27+7888)
-misclass_rate
-
-wrist_rf <- randomForest(
-  label ~ participant + min_EDA_wrist + max_EDA_wrist + range_EDA_wrist + sd_wrist_ACC_Z, data=train)
-round(importance(wrist_rf), 2)
-pred = predict(wrist_rf, newdata=test)
-cm=table(test$label, pred)
-cm
-misclass_rate = (5+20)/(4398+5+20+7895)
-misclass_rate
-```
-
-```{r cv-random-forest,  eval=FALSE}
-if (file.exists('sparse_no_survey_rf')) {
-  load(file = 'sparse_no_survey_rf')
-} else {
-  sparse_no_survey_rf <- train(
-    label ~ participant +  max_EDA_wrist + sd_ACC_chest_mag, data=train,
-    trControl = train_control, method = "rf"
-  )
-  save(sparse_no_survey_rf, file = 'sparse_no_survey_rf')
-}
-calc_metrics(sparse_no_survey_rf, test, 5)
-if (file.exists('wrist_rf')) {
-  load(file = 'wrist_rf')
-} else {
-  wrist_rf <- train(
-    label ~ participant + min_EDA_wrist + max_EDA_wrist + range_EDA_wrist + sd_wrist_ACC_Z, data=train,
-    trControl = train_control, method = "rf")
-  save(sparse_no_survey_rf, file = 'wrist_rf')
-}
-calc_metrics(wrist_rf, test, 5)
-```
-
-In addition to the logistic regression, we also fit several other types of models. The first of those was a random forest model. We built a random forest model using all of our data and just the wrist data, and had great overall performance for both. Our model built with all the data consisted of only three predictors: participant ID, max wrist electrodermal activity, and magnitude of standard deviation of chest movement, and it had a misclassification rate of 0.74%. The model built using only wrist data used five predictors, which included participant ID, minimum electrodermal activity, maximum electrodermal activity, the range of electrodermal activity, and standard deviation of Z-plane movement, and it had an even lower misclassification rate of 0.002%. 
-
-Despite the great performance of these models, we opted to go with the logistic regression as our final model since interpretability was important to the goals of the case study. Random forest is great for prediction, however it is difficult to interpret how exactly the predictors affect the response. Therefore, we were willing to sacrifice a little bit of accuracy in order to make more concrete conclusions about how our predictor variables affected stress and amusement.
-
-## Multilevel Model
-```{r Hierarchal Model, eval=FALSE}
-# Fixed Effects (survey & subdata variables)
-survey_var<- paste(colnames(survey))
-sub_var <- paste(colnames(sub_data))
-fixed_var <- c(survey_var, sub_var)
-fixed_var <- fixed_var[-c(2,37:42)] # removed missing SSSQ variables because of NA
-# Random Effects (wearable variables)
-wearable_var <- paste ("(1|",colnames(final_data)[-c(1,2)], ")")
-# Formula
-mlm_formula <- as.formula(paste("as.numeric(label) ~ participant + ", paste(wearable_var[c(9,50)], collapse= "+")))
-mlm <- lmer(mlm_formula, data = train, REML=FALSE,control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.rankZ = "ignore", check.nobs.vs.nRE="ignore", optimizer ="Nelder_Mead", ))
-summary(mlm)
-stepAIC(mlm, direction = "backward", trace = TRUE, data = train)
-```
-
 # Bibliography
 
 1. P. Schmidt et al. (2018). Introducing WESAD, a Multimodal Dataset for Wearable Stress and Affect Detection. Proceedings of the 2018 on International Conference on Multimodal Interaction - ICMI 18.
@@ -713,19 +627,9 @@ stepAIC(mlm, direction = "backward", trace = TRUE, data = train)
 
 8. G. Uy et al. (2013). Correlation of Stress Inducers and Physiological Signals with Continuous Stress Annotations. WCTP 2012, PICT 7, pp. 178–183.
 
+# Appendix
 
-```{r rf-using-same-preds-as-wrist-log-model, eval=FALSE}
-rf_model_final_wrist <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
-                                sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag + sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP,
-                              data = newtrain, trControl = train_control,
-                              method = "rf", tuneGrid = expand.grid(.mtry=floor(sqrt(34))))
-save(rf_model_final_wrist, file = 'rf_model_final_wrist')
-summary(rf_model_final_wrist$finalModel)
-calc_metrics(rf_model_final_wrist, test, 5)
-varImp(rf_model_final_wrist$finalModel)
-```
-
-#  Model Output
+##  Model Output
 
 ### Wrist Data Model 
 
@@ -923,6 +827,100 @@ lr_model_final_wrist_chest_coef_tidy_df %>%
   kable_styling(latex_options = c("hold_position")) 
 ```
 
+## Random Forest Model
+
+```{r random-forests, eval=FALSE}
+set.seed(20200922)
+forest_data <- all_data %>% 
+  subset(dplyr::select = -c(PANAS_Angry, PANAS_Irritated, SSSQ_Committed, SSSQ_Succeed, SSSQ_Motivated, SSSQ_Reflected, SSSQ_Concerned, SSSQ_Worried, Condition, PANAS_Sad))
+forest_data <- forest_data[1:(length(forest_data)-1)]
+forest_data <- forest_data %>%
+  mutate(participant = as.factor(participant),
+         Age = as.numeric(Age),
+         Hand = as.factor(`Dominant hand`),
+         Gender = as.factor(Gender),
+         Height = as.numeric(`Height (cm)`),
+         Weight = as.numeric(`Weight (kg)`))
+forest_data <- forest_data %>% 
+  subset(dplyr::select = -c(`Dominant hand`, `Height (cm)`, `Weight (kg)`))
+idx = createDataPartition(forest_data$label, p = 0.8, list = FALSE)
+train = forest_data[idx, ]
+test = forest_data[-idx, ]
+correlationMatrix <- cor(subset(forest_data, dplyr::select = -c(Gender, Hand, participant, label)))
+highlyCorrelated <- findCorrelation(correlationMatrix, cutoff=0.5, verbose = FALSE)
+require(caTools)
+
+sparse_no_survey_rf <- randomForest(
+  label ~ participant +  max_EDA_wrist + sd_ACC_chest_mag, data=train)
+round(importance(sparse_no_survey_rf), 2)
+pred = predict(sparse_no_survey_rf, newdata=test)
+cm=table(test$label, pred)
+cm
+misclass_rate = (64+27)/(4339+64+27+7888)
+misclass_rate
+
+wrist_rf <- randomForest(
+  label ~ participant + min_EDA_wrist + max_EDA_wrist + range_EDA_wrist + sd_wrist_ACC_Z, data=train)
+round(importance(wrist_rf), 2)
+pred = predict(wrist_rf, newdata=test)
+cm=table(test$label, pred)
+cm
+misclass_rate = (5+20)/(4398+5+20+7895)
+misclass_rate
+```
+
+```{r cv-random-forest,  eval=FALSE}
+if (file.exists('sparse_no_survey_rf')) {
+  load(file = 'sparse_no_survey_rf')
+} else {
+  sparse_no_survey_rf <- train(
+    label ~ participant +  max_EDA_wrist + sd_ACC_chest_mag, data=train,
+    trControl = train_control, method = "rf"
+  )
+  save(sparse_no_survey_rf, file = 'sparse_no_survey_rf')
+}
+calc_metrics(sparse_no_survey_rf, test, 5)
+if (file.exists('wrist_rf')) {
+  load(file = 'wrist_rf')
+} else {
+  wrist_rf <- train(
+    label ~ participant + min_EDA_wrist + max_EDA_wrist + range_EDA_wrist + sd_wrist_ACC_Z, data=train,
+    trControl = train_control, method = "rf")
+  save(sparse_no_survey_rf, file = 'wrist_rf')
+}
+calc_metrics(wrist_rf, test, 5)
+```
+
+In addition to the logistic regression, we also fit several other types of models. The first of those was a random forest model. We built a random forest model using all of our data and just the wrist data, and had great overall performance for both. Our model built with all the data consisted of only three predictors: participant ID, max wrist electrodermal activity, and magnitude of standard deviation of chest movement, and it had a misclassification rate of 0.74%. The model built using only wrist data used five predictors, which included participant ID, minimum electrodermal activity, maximum electrodermal activity, the range of electrodermal activity, and standard deviation of Z-plane movement, and it had an even lower misclassification rate of 0.002%. 
+
+Despite the great performance of these models, we opted to go with the logistic regression as our final model since interpretability was important to the goals of the case study. Random forest is great for prediction, however it is difficult to interpret how exactly the predictors affect the response. Therefore, we were willing to sacrifice a little bit of accuracy in order to make more concrete conclusions about how our predictor variables affected stress and amusement.
+
+```{r rf-using-same-preds-as-wrist-log-model, eval=FALSE}
+rf_model_final_wrist <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
+                                sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag + sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP,
+                              data = newtrain, trControl = train_control,
+                              method = "rf", tuneGrid = expand.grid(.mtry=floor(sqrt(34))))
+save(rf_model_final_wrist, file = 'rf_model_final_wrist')
+summary(rf_model_final_wrist$finalModel)
+calc_metrics(rf_model_final_wrist, test, 5)
+varImp(rf_model_final_wrist$finalModel)
+```
+
+## Multilevel Model
+```{r Hierarchal Model, eval=FALSE}
+# Fixed Effects (survey & subdata variables)
+survey_var<- paste(colnames(survey))
+sub_var <- paste(colnames(sub_data))
+fixed_var <- c(survey_var, sub_var)
+fixed_var <- fixed_var[-c(2,37:42)] # removed missing SSSQ variables because of NA
+# Random Effects (wearable variables)
+wearable_var <- paste ("(1|",colnames(final_data)[-c(1,2)], ")")
+# Formula
+mlm_formula <- as.formula(paste("as.numeric(label) ~ participant + ", paste(wearable_var[c(9,50)], collapse= "+")))
+mlm <- lmer(mlm_formula, data = train, REML=FALSE,control = lmerControl(check.nobs.vs.nlev = "ignore", check.nobs.vs.rankZ = "ignore", check.nobs.vs.nRE="ignore", optimizer ="Nelder_Mead", ))
+summary(mlm)
+stepAIC(mlm, direction = "backward", trace = TRUE, data = train)
+```
 
 
 
