@@ -339,7 +339,7 @@ features_tbl %>%
 
 We first split our data into a 80/20 train/test split, perform 5-fold cross validation on the training data and lastly assess model performance by predicting on the testing data. 
 
-The extracted features serve as predictors for our classification models. We propose two different models, both using different types of sensor data: features from the wrist-worn device, and features from both chest-worn and wrist-worn devices. Since our research goals are concerned with the predictive power and interpretability of our models, logistic regression was chosen over other classification algorithms. To determine our final model, we performed variable selection by first including all relevant features and $participant$ and then used backwards selection with AIC as the selection criterion. Additionally, we iteratively removed variables that had p-values greater than 0.1. Interaction effects with the remaining predictors and $participant$ were fit to determine if they would improve the predictive power of the models. We also noted that the models with the subjects’ personal characteristics did not increase accuracy, F1 score or AUC values, and also led to increased computational cost. Thus, we did not include any personal characteristics in the final models. 
+The extracted features serve as predictors for our classification models. We propose two different models, both using different types of sensor data: features from the wrist-worn device, and features from both chest-worn and wrist-worn devices. Since our research goals are concerned with the predictive power and interpretability of our models, logistic regression was chosen over other classification algorithms. To determine our final model, we performed variable selection by first including all relevant features and $participant$ and then used backwards selection with AIC as the selection criterion. Additionally, we iteratively removed variables that had p-values greater than 0.1. Interaction effects between the remaining predictors and with $participant$ were fit to determine if they would improve the predictive power of the models. We also noted that the models with the subjects’ personal characteristics did not increase accuracy, F1 score or AUC values, and also led to increased computational cost. Thus, we did not include any personal characteristics in the final models. 
 
 The final models are below (Model 1 was fitted using only the wrist-worn data and Model 2 was fitted using all the sensor data): 
 
@@ -506,7 +506,7 @@ bind_rows(final_wrist_lr_model_df_1Hz, final_wrist_chest_lr_model_df_1Hz) %>%
 ```
 
 
-It is also worth discussin independence when evaluating our logistic regression model.  Adding $participant$ addresses independence at the subject level, but each individual sample is not independent; presumably, a person's heart rate from one second ago affects their current heart rate. 
+It is also worth discussing independence when evaluating our logistic regression model.  Adding $participant$ addresses independence at the subject level, but each individual sample is not independent; presumably, a person's heart rate from one second ago affects their current heart rate. 
 
 
 
@@ -559,9 +559,9 @@ bind_rows(final_wrist_lr_model_df_10, final_wrist_chest_lr_model_df_10) %>%
         )) %>% 
   kable_styling(latex_options = c("hold_position")) %>%
   add_header_above(c(" " = 1, "Cross Validation Data" = 3, "Test Data" = 3))
+#We conduct sensitivity analysis by using 10-fold cross validation on our training data. We see that the accuracy, $F_1$, and AUC on the training and testing data are very similar. 
 ```
 
-We conduct sensitivity analysis by using 10-fold cross validation on our training data. We see that the accuracy, $F_1$, and AUC on the training and testing data are very similar. 
 
 
 # Discussion
@@ -569,6 +569,10 @@ We conduct sensitivity analysis by using 10-fold cross validation on our trainin
 ## Interpretation of Predictors
 
 In our wrist-only model, the coefficients for standard deviation of wrist EDA, standard deviation of wrist ACC, and standard deviation of wrist HRV all suggest that the odds of being stressed increase as these measures increase. However, the negative interaction between standard deviation of wrist EDA and standard deviation of ACC suggests that the odds of being stressed don't increase as much when these two measures increase together, holding HRV constant. For a full list of these estimates, please see Table 3. Also, note that these estimates are in terms of the log-odds. 
+
+In the model built with both chest and wrist data, increases in chest standard deviation of electrodermal activity, wrist standard deviation of electrodermal activity, chest standard deviation of temperature, wrist minimum temperature, standard deviation of inhale, maximum breath cycle time, mean of the magnitude of chest acceleration, standard deviation of the magnitude of chest acceleration, standard deviation of the magnitude of wrist acceleration, standard deviation of the magnitude of wrist heart rate, standard deviation of wrist heart rate variability, root mean square of wrist heart rate variability, and root mean square of chest heart rate variability all increase the odds that a person is stressed while holding other variables constant. On the other hand, increases in minimum chest electromyography, standard deviation of exhale, inhale/exhale ratio, and standard deviation of chest heart rate all lead to a decrease in the odds that a person is stressed, keeping other variables constant.  For a full list of these estimates, please see Table 4. Also, note that these estimates are in terms of the log-odds. 
+
+In both models, standard deviation of wrist electrodermal activity has the largest estimate. In the wrist-only model, its estimate is 63.622, and in the wrist and chest model, it is 1993.249. This means that in the wrist model, we expect that an increase of 0.01 in the standard deviation of electrodermal activity will cause the odds that a person is stressed to multiply by $e^{0.63}$, or 1.889 holding all else constant. In the wrist and chest model, we expect that the same increase of 0.01 in the standard deviation of wrist electrodermal activity will cause the odds that a person is stressed to multiply by ${e^19.93}$, or 453,492,822 holding all else constant. In this same model, keeping all other variables constant, a 0.01 increase in the standard deviation of chest electrodermal activity will cause the odds that a person is stressed to multiply by ${e^0.283}$, or 1.328. This suggests that small changes in the standard deviation of electrodermal activity can have very large impacts on the odds that a person is stressed versus amused. As this variability increases, it appears that a given participant is much more likely to be stressed.
 
 In the model built with both chest and wrist data, increases in chest standard deviation of EDA, wrist standard deviation of EDA, chest standard deviation of temperature, wrist minimum temperature, standard deviation of inhale, maximum breath cycle time, mean chest ACC, standard deviation of chest ACC, standard deviation of wrist ACC, standard deviation of wrist HR, standard deviation of wrist HRV, root mean square of wrist HRV, and root mean square of chest HRV all increase the odds that a person is stressed while holding other variables constant. On the other hand, increases in minimum chest EMG, standard deviation of exhale, inhale/exhale ratio, and standard deviation of chest HR all lead to a decrease in the odds that a person is stressed, keeping other variables constant.  For a full list of these estimates, please see Table 4. Also, note that these estimates are in terms of the log-odds. 
 
@@ -580,15 +584,15 @@ It is also interesting to note that in the model built with chest and wrist data
 
 ## Quantifying Heterogeneity 
 
-In the wrist only model, when compared to the baseline S10 and holding all else constant, we expect the odds of being  stressed for S17 to multiply by exp(0.256), while we expect the odds of being stressed for S7 to multiply by exp(-5.765) and the odds of being stressed for S3 to multiply by exp(-4.34).
+In the wrist only model, when compared to the baseline S10 and holding all else constant, we expect the odds of being  stressed for S17 to multiply by $e^{0.256}$, or 1.29, while we expect the odds of being stressed for S7 to multiply by $e^{-5.765}$, or 0.003, and the odds of being stressed for S3 to multiply by $e^{-4.34}$, or 0.013.
 
-For the  sdWACC, when compared to the baseline S10 and holding all else constant,  as SD of ACC magnitude increases by one unit, we expect the odds of being stressed for S7 to multiply by exp(10.803) more and the odds of being stressed for S5 to multiply by exp(6.297) more. 
+For the  sdWACC, when compared to the baseline S10 and holding all else constant,  as SD of ACC magnitude increases by one unit, we expect the odds of being stressed for S7 to multiply by $e^{10.803}$, or 49168.08 more and the odds of being stressed for S5 to multiply by $e^{6.297}$, or 542.9 more. 
 
-In the all data model, when compared to the baseline S10 and holding all else constant, we expect the odds of being stressed for S8 to multiply by exp(0.413) and the odds of being stressed for S15 to multiply by exp(0.178), while we  expect the odds of being stressed for the other 12 subjects to multiply by a value less than 1. 
-For the sdCHR, when compared to the baseline S10 and holding all else constant, as HR increases by one unit, we expect the odds of being stressed for S11 to multiply by exp(13.179) more and the odds of being  stressed for S17 to multiply by exp(8.979) more; conversely, as HR increases by one unit, we expect the odds of being stressed for S8 to multiply by exp(-4.834).
+In the all data model, when compared to the baseline S10 and holding all else constant, we expect the odds of being stressed for S8 to multiply by $e^{0.413}$, or 1.51, and the odds of being stressed for S15 to multiply by $e^{0.178}$, or 1.19, while we  expect the odds of being stressed for the other 12 subjects to multiply by a value less than 1. 
+
+For the sdCHR, when compared to the baseline S10 and holding all else constant, as HR increases by one unit, we expect the odds of being stressed for S11 to multiply by $e^{13.179}$, or 529135.6 more and the odds of being  stressed for S17 to multiply by $e^{8.979}$, or 7934.7 more; conversely, as HR increases by one unit, we expect the odds of being stressed for S8 to multiply by $e^{-4.834}$, or 0.008.
 
 Although some variation between subjects is expected, within both models, we see large variability among the odds of being stressed. These results indicate that there is heterogeneity across individuals’ responses to stress vs. amusement. Overall, although we only see the differences between S10 vs. other subjects (but not S2 vs. S3 for example), the disparity in the odds of being stressed across the 15 participants is pretty apparent. This could also be due to model instability or a small number of participants - a larger pool of participants could reduce heterogeneity and variability between the estimates. 
-
 
 # Conclusion 
 
@@ -698,7 +702,6 @@ stepAIC(mlm, direction = "backward", trace = TRUE, data = train)
 7. M. Arif and A. Kattan. (2015). Physical Activities Monitoring Using Wearable Acceleration Sensors Attached to the Body. PLoS ONE 10, 7.
 
 8. G. Uy et al. (2013). Correlation of Stress Inducers and Physiological Signals with Continuous Stress Annotations. WCTP 2012, PICT 7, pp. 178–183.
-
 
 
 ```{r rf-using-same-preds-as-wrist-log-model, eval=FALSE}
