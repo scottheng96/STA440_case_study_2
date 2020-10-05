@@ -346,7 +346,7 @@ features_tbl %>%
   kable(escape=F,   booktabs = T, align = "c",
         caption = "Summary of Sensor Data Categories, with the Extracted Predictors and Respective Symbols",) %>%
   kable_styling(latex_options = c("hold_position")) %>% 
-  group_rows(index = c("Chest Sensor Data" = 11, "Wrist Sensor Data" = 5)) %>%
+  group_rows(index = c("Chest Sensor Data" = 12, "Wrist Sensor Data" = 4)) %>%
   collapse_rows(columns = 1, latex_hline = "major") %>% 
   row_spec(0, bold = TRUE) #%>% 
 #column_spec(column = c(2), latex_column_spec = "c")
