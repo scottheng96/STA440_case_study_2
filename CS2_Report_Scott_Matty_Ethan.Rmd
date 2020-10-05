@@ -215,7 +215,8 @@ Section 2 focuses on providing descriptions of the WESAD data, how the raw data 
 # includes all the plots in the EDA
 EDA_wrist_eng_df <- all_data %>% dplyr::select(participant, label, mean_EDA_wrist:range_EDA_wrist) 
 
-raw_data_mod <- raw_data[!(raw_data$Label==1),]
+raw_data_mod <- raw_data[!(raw_data$Label==1),] %>% 
+  mutate(Participant = fct_relevel(Participant,  c('S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10',  'S11', 'S13', 'S14', 'S15', 'S16', 'S17'))) 
 
 # chest EDA
 chest_EDA <- raw_data_mod %>% 
