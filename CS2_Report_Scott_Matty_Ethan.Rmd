@@ -90,7 +90,8 @@ all_data <- final_data %>%
     label == 3 ~ 0
   )) %>% 
   mutate(label = as.factor(label)) %>% 
-  mutate(participant = fct_relevel(participant,  c('S10', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S11', 'S13', 'S14', 'S15', 'S16', 'S17')))
+  mutate(participant = fct_relevel(participant,  c('S10', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S11', 'S13', 'S14', 'S15', 'S16', 'S17'))) %>% 
+  mutate_if(is.numeric, scale)
 ```
 
 
@@ -410,6 +411,7 @@ lr_model_final_wrist_chest <- train(label ~ sd_EDA + sd_EDA_wrist + sd_Temp_ches
                                     data = train, trControl = train_control, 
                                     method = "glm",
                                     family ="binomial")
+summary(lr_model_final_wrist_chest)
 ```
 
 ```{r logistic-regression-metrics}
