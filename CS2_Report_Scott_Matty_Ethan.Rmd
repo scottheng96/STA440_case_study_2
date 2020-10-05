@@ -798,21 +798,6 @@ lr_model_final_wrist_coef_tidy_df %>%
 ```
 
 ```{r}
-lr_model_final_wrist_coef_tidy_df %>% 
-  filter(term %in% lr_model_final_wrist_coef_tidy_df$term[str_detect(lr_model_final_wrist_coef_tidy_df$term, "participant")] 
-  ) %>% 
-  mutate(`Log Odds` = estimate,
-         Odds = exp(`Log Odds`)) %>% 
-  dplyr::select(term, `Log Odds`, Odds) %>% 
-  mutate(term = str_remove_all(term, "participant"),
-         term = str_remove_all(term, "`"),
-         term = str_replace_all(term, pattern = "sd_ACC_wrist_mag:", replacement = "$\\\\sigma^W_{ACC}$ * ")) %>%
-  mutate_if(is.double, round, digits = 3) %>%
-  kableExtra::kable(booktabs = T,  escape = F, 
-                    caption = "Cofficients obtained with Model 1 - Quantifying Hetereogeneity") 
-```
-
-```{r}
 lr_model_final_wrist_chest_coef_tidy_df <- lr_model_final_wrist_chest$finalModel %>% 
   tidy() %>%
   dplyr::select(-statistic) %>% 
@@ -913,23 +898,19 @@ lr_model_final_wrist_chest_coef_tidy_df %>%
   column_spec(1, width = "4cm") %>% 
   column_spec(column = c(2:4), latex_column_spec = "c") 
 ```
-
 ```{r}
-# lr_model_final_wrist_chest_coef_tidy_df %>% 
-#   filter(term %in% lr_model_final_wrist_chest_coef_tidy_df$term[str_detect(lr_model_final_wrist_chest_coef_tidy_df$term, "participant")] 
-#   ) %>% 
-#   mutate(rownum = c(1:14,  1:14, 1:14)) %>% 
-#   group_by(rownum) %>% 
-#   mutate(`Log Odds` = sum(estimate),
-#          Odds = exp(`Log Odds`)) %>% 
-#   arrange(desc(Odds)) %>% 
-#   filter(row_number() %% 3 == 1) %>% 
-#   ungroup() %>% 
-#   dplyr::select(term, `Log Odds`, Odds) %>% 
-#   mutate(term = str_remove_all(term, "participant")) %>% 
-#   rename(Participant = term) %>% 
-#   mutate_if(is.double, round, digits = 3)
-
+lr_model_final_wrist_coef_tidy_df %>% 
+  filter(term %in% lr_model_final_wrist_coef_tidy_df$term[str_detect(lr_model_final_wrist_coef_tidy_df$term, "participant")] 
+  ) %>% 
+  mutate(`Log Odds` = estimate,
+         Odds = exp(`Log Odds`)) %>% 
+  dplyr::select(term, `Log Odds`, Odds) %>% 
+  mutate(term = str_remove_all(term, "participant"),
+         term = str_remove_all(term, "`"),
+         term = str_replace_all(term, pattern = "sd_ACC_wrist_mag:", replacement = "$\\\\sigma^W_{ACC}$ * ")) %>%
+  mutate_if(is.double, round, digits = 3) %>%
+  kableExtra::kable(booktabs = T,  escape = F, 
+                    caption = "Cofficients obtained with Model 1 - Quantifying Hetereogeneity") 
 
 lr_model_final_wrist_chest_coef_tidy_df %>% 
   filter(term %in% lr_model_final_wrist_chest_coef_tidy_df$term[str_detect(lr_model_final_wrist_chest_coef_tidy_df$term, "participant")] 
