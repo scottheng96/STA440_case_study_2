@@ -9,6 +9,9 @@ Steps to Reproduce Case Study Goals 1, 4 and 5.
 If you want to run everything from scratch, follow step 5. If you just want to reproduce the 3 case study goals, skip ahead to step 6. 
 
 5. Reproduce the data: sbatch data_reproducibility.sh* (It is recommended that you skip to step 6 to save time.)
+    - output: individual CSV files with WESAD raw signal data and survey data, Rds files used for model training and testing
+    - output location: ./output_data (an output data folder will be created in the same directory where data_reproducibility.sh is located)
+    - Estimated runtime: 1+ hour
 
 6. Reproduce the case study goals: sbatch code_reproducibility.sh**
 Reproduce the case study goals: cat slurm-###.out, where ### is the batch job number. This  should return some text, as well as tables that display the case study goals. The output will be very long, so make sure you scroll to the top to see it all. 
