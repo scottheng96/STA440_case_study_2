@@ -274,7 +274,7 @@ panel.cor <- function(x, y, ...)
 }
 ```
 
-The WESAD dataset contains 63 million samples of raw physiological and motion signal data collected from 15 test subjects [[1]][Bibliography]. The data was collected using 2 devices: a chest-worn device (RespiBAN) and a wrist-worn device (Empatica E4). The RespiBAN chest data includes electrocardiography (ECG) data in mV, electrodermal activity (EDA) in microseconds, electromyography (EMG) data in mV, skin temperature (TEMP) in °C, displacement of the thorax for males and the abdomen for females induced by inhaling or exhaling (RESP) as a percentage, and 3-axis accelerometer (ACC) data in g - the acceleration of gravity. All RespiBAN data were recorded at 700 Hz. The E4 wrist data collected includes blood volume pulse (BVP) data (64Hz), ACC data (32Hz), EDA in microseconds (4Hz), and TEMP in °C (4Hz). Each sample also references a label corresponding to the study protocol condition, with each label referring to a different condition (1-baseline, 2-stress, 3-amusement, 4-meditation). These conditions were recorded by having participants exposed to sources of stimulation that would elicit the desired condition. The labels 0, 5, 6, 7  indicate that the data should be ignored. The dataset also included information about each subject, such as height, weight and age, as well as personal responses to PANAS and SSSQ questionnaires.
+The WESAD dataset contains 63 million samples of raw physiological and motion signal data collected from 15 test subjects [[1]][Bibliography]. The data was collected using 2 devices: a chest-worn device (RespiBAN) and a wrist-worn device (Empatica E4). The RespiBAN chest data includes electrocardiography (ECG) data in mV, electrodermal activity (EDA) in microseconds, electromyography (EMG) data in mV, skin temperature (TEMP) in °C, displacement of the thorax for males and the abdomen for females induced by inhaling or exhaling (RESP) as a percentage, and 3-axis accelerometer (ACC) data in g - the acceleration of gravity. All RespiBAN data were recorded at 700 Hz. The E4 wrist data collected includes blood volume pulse (BVP) data (64Hz), ACC data in units of 1/64g (32Hz), EDA in microseconds (4Hz), and TEMP in °C (4Hz). Each sample also references a label corresponding to the study protocol condition, with each label referring to a different condition (1-baseline, 2-stress, 3-amusement, 4-meditation). These conditions were recorded by having participants exposed to sources of stimulation that would elicit the desired condition. The labels 0, 5, 6, 7  indicate that the data should be ignored. The dataset also included information about each subject, such as height, weight and age, as well as personal responses to PANAS and SSSQ questionnaires.
 
 Considering the nature of the WESAD dataset and the scope of our study, we decided to filter out samples that did not represent stress or amusement, and standardized sampling rates for all RespiBAN and E4 variables to 4Hz. We did this by downsampling data collected at a more frequent rate, and we chose to use the recorded signals from these time periods instead of a mean since we planned on calculating mean windows of our data later. This downsampling allowed for more feasible computation with a dataset of reasonable size and standardized windows for multiple variables. Even though we lost some information by downsampling, we thought this was a good trade-off so we could test more models with a smaller dataset.
 
@@ -314,7 +314,7 @@ There has also been research done on the appropriate time intervals to use when 
 
 As mentioned earlier, the brain takes .9 milliseconds to shift the body into a full stress response[[4]][Bibliography], which suggests that these data should be sampled at approximately 1111 Hz to properly identify a state of stress. However, the highest-resolution data is sampled at 700 Hz, which suggests that these data are not granular enough to fully capture a shift to stress. Thus, with computational cost in mind, we downsampled our data to 4Hz. We assigned a unique ID to each of the 15 subjects, and also added their personal characteristics. Since we are primarily interested in differentiating between stress and amusement, we only kept samples that were labeled 2 (stress) or 3 (amusement). We then relabeled amusement as 0 and stress as 1.   
 
-Next, we calculated features for the different modalities.  Segmentation of the physiological signals was done using a sliding window, with a window shift of 0.25 seconds. The ACC and physiological features were all extracted using a 5 second window size [[7]][Bibliography][[8]][Bibliography]. To calculate some BVP and ECG features, we utilized peak detection algorithms to identify the time between each successive peaks and used the peak intervals to calculate the mean, standard deviation and root-mean squared of heart rate variability within each assigned windows. 
+Next, we calculated features for the different modalities.  Segmentation of the physiological signals was done using a sliding window, with a window shift of 0.25 seconds. The ACC and physiological features were all extracted using a 5 second window size [[7]][Bibliography][[8]][Bibliography]. To calculate some BVP and ECG features, we utilized peak detection algorithms [[9]][Bibliography] to identify the time between each successive peaks and used the peak intervals to calculate the mean, standard deviation and root-mean squared of heart rate variability within each assigned windows. 
 
 To calculate the respiration variables, we had to separate out inhales and exhales. Inhale data corresponded to respiration values greater than zero and exhale data corresponded to respiration values less than zero. For five-second intervals where someone either did not inhale or exhale, we coded the corresponding observations to equal zero instead of NA. Additionally, we found total respiration range which took both inhale and exhale values into account when calculating the maximums and minimums. Next, we calculated the inhale to exhale ratio by dividing our mean inhale column by our mean exhale column. Since this would have produced some infinite values due to the fact that periods where someone was not exhaling were set to zero, we set these inhale/exhale ratios to equal 10. Additionally, we had a couple of intervals where the inhale/exhale ratio was very large, sometimes even greater than 1500. This was happening because some five-second windows in our data could have consisted of the participant inhaling for most of the time, thus we would be dividing by an extremely low exhale value. So, we re-coded any ratio greater than 10 to equal an upper bound of 10. This is a fair assumption, since it would not be physically possible for someone to inhale incredibly more than they exhale. We next calculated a breath rate by first summing the number of rows in one breath cycle, which is defined as one full inhale and one full exhale. Then, we took this sum and divided it by four, since the observations in our dataset were taken every quarter of a second, to get the time in seconds of one full breath cycle. 
 
@@ -398,8 +398,12 @@ lr_model_final_wrist <- train(label ~  sd_EDA_wrist + sd_ACC_wrist_mag + sd_hear
                               data = train, trControl = train_control, 
                               method = "glm",
                               family ="binomial") 
-#summary(lr_model_final_wrist$finalModel)
-```
+naive_wrist <- lr_model_final_wrist$pred %>% 
+  group_by(Resample, obs) %>% 
+  summarize(count = n()) %>% 
+  mutate(prop = count / sum(count)) %>% 
+  filter(obs == 1) 
+``` 
 
 ```{r full-logistic-model}
 lr_model_final_wrist_chest <- train(label ~ sd_EDA + sd_EDA_wrist + sd_Temp_chest + 
@@ -412,7 +416,11 @@ lr_model_final_wrist_chest <- train(label ~ sd_EDA + sd_EDA_wrist + sd_Temp_ches
                                     data = train, trControl = train_control, 
                                     method = "glm",
                                     family ="binomial")
-#summary(lr_model_final_wrist_chest)
+naive_wrist_chest <- lr_model_final_wrist_chest$pred %>% 
+  group_by(Resample, obs) %>% 
+  summarize(count = n()) %>% 
+  mutate(prop = count / sum(count)) %>% 
+  filter(obs == 1) 
 ```
 
 ```{r logistic-regression-metrics}
@@ -434,11 +442,11 @@ bind_rows(final_wrist_lr_model_df, final_wrist_chest_lr_model_df) %>%
 
 ## Wrist Sensor Data 
 
-Using only data from the wrist-worn wearable, our model reports an accuracy of `r final_wrist_lr_model_df$Accuracy...4`, an $F_1$-score of `r final_wrist_lr_model_df$F1...5` and an AUC of `r final_wrist_lr_model_df$AUC...6` when predicting on the testing data. This suggests that we can detect stress vs. amusement reasonably well using only the wrist-worn wearable, which may be preferable since a wrist-worn device is minimally intrusive and more convenient than a chest-worn device.
+Using only data from the wrist-worn wearable, our model reports an accuracy of `r final_wrist_lr_model_df$Accuracy...4`, an $F_1$-score of `r final_wrist_lr_model_df$F1...5` and an AUC of `r final_wrist_lr_model_df$AUC...6` when predicting on the testing data. This suggests that we can detect stress vs. amusement reasonably well using only the wrist-worn wearable, which may be preferable since a wrist-worn device is minimally intrusive and more convenient than a chest-worn device. A naive classifier using only wrist sensor data that predicts only the majority class from each test fold reports an accuracy of 64.26 ± 0.00; this indicates our model exceeds that of a naive classifier. 
 
 ## All Sensor Data  
 
-Using data from both the chest-worn and wrist-worn wearables, our model reports an accuracy of `r final_wrist_chest_lr_model_df$Accuracy...4`, an $F_1$-score of `r final_wrist_chest_lr_model_df$F1...5` and an AUC of `r final_wrist_chest_lr_model_df$AUC...6` when predicting on the testing data. These values suggest that sensor data are useful in discriminating between stress and amusement conditions. These metrics are slightly better than the previous model, which indicates that having data from both the chest-worn and wrist-worn wearables is better than having just data from the wrist-worn device. 
+Using data from both the chest-worn and wrist-worn wearables, our model reports an accuracy of `r final_wrist_chest_lr_model_df$Accuracy...4`, an $F_1$-score of `r final_wrist_chest_lr_model_df$F1...5` and an AUC of `r final_wrist_chest_lr_model_df$AUC...6` when predicting on the testing data. These values suggest that sensor data are useful in discriminating between stress and amusement conditions. These metrics are slightly better than the previous model, which indicates that having data from both the chest-worn and wrist-worn wearables is better than having just data from the wrist-worn device. A naive classifier using all sensor data that predicts only the majority class from each test fold reports an accuracy of 64.26 ± 0.00; similarly, this indicates our model exceeds that of a naive classifier. 
 
 ## Model Diagnostics 
 
@@ -643,7 +651,9 @@ Since it appears that the wrist wearable is sufficient for detecting stress vers
 
 8. G. Uy et al. (2013). Correlation of Stress Inducers and Physiological Signals with Continuous Stress Annotations. WCTP 2012, PICT 7, pp. 178–183.
 
+9. P.Westermark (2015). Package ‘peakPick’. https://cran.r-project.org/web/packages/peakPick/peakPick.pdf
 
+  
 ## Random Forest Model
 
 ```{r random-forests, eval=FALSE}
@@ -909,15 +919,19 @@ lr_model_final_wrist_chest_coef_tidy_df %>%
 lr_model_final_wrist_coef_tidy_df %>% 
   filter(term %in% lr_model_final_wrist_coef_tidy_df$term[str_detect(lr_model_final_wrist_coef_tidy_df$term, "participant")] 
   ) %>% 
-  mutate(`Log Odds` = estimate,
+  mutate(Term = term,
+         `Log Odds` = estimate,
+         `Std. Error` = std.error,
          Odds = exp(`Log Odds`)) %>% 
-  dplyr::select(term, `Log Odds`, Odds) %>% 
-  mutate(term = str_remove_all(term, "participant"),
-         term = str_remove_all(term, "`"),
-         term = str_replace_all(term, pattern = "sd_ACC_wrist_mag:", replacement = "$\\\\sigma^W_{ACC}$ * ")) %>%
+  dplyr::select(Term, `Log Odds`, `Std. Error`, Odds) %>% 
+  mutate(Term = str_remove_all(Term, "participant"),
+         Term = str_remove_all(Term, "`"),
+         Term = str_replace_all(Term, pattern = "sd_ACC_wrist_mag:", replacement = "$\\\\sigma^W_{ACC}$ * ")) %>%
   mutate_if(is.double, round, digits = 3) %>%
   kableExtra::kable(booktabs = T,  escape = F, 
-                    caption = "Coefficients obtained with Model 1 - Quantifying Hetereogeneity") 
+                    caption = "Coefficients obtained with Model 1 - Quantifying Hetereogeneity") %>%   
+  kableExtra::pack_rows("Participant", 1,14, escape = F) %>% 
+  kableExtra::pack_rows("$\\sigma^W_{ACC}$ * Participant", 15,28, escape = F)
 
 lr_model_final_wrist_chest_coef_tidy_df %>% 
   filter(term %in% lr_model_final_wrist_chest_coef_tidy_df$term[str_detect(lr_model_final_wrist_chest_coef_tidy_df$term, "participant")] 
