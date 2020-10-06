@@ -69,21 +69,21 @@ ggplot2::theme_set(new = theme_bw())
 ```
 
 ```{r load-data}
-survey <- read_csv("survey.csv")
+#survey <- read_csv("survey.csv")
 final_data <- readRDS("final_data.Rds")
-sub_data <- readRDS("subj_df.Rds")
+#sub_data <- readRDS("subj_df.Rds")
 raw_data <- readRDS("chest_and_wrist.Rds")
-survey <- survey %>%
-  rename(label = Label)
-sub_data <- sub_data %>%
-  rename(participant = Participant) %>%
-  mutate(`Dominant hand` = as.factor(`Dominant hand`),
-         Gender = as.factor(Gender),
-         `Height (cm)` = as.double(`Height (cm)`),
-         `Weight (kg)` = as.double(`Weight (kg)`))
+# survey <- survey %>%
+#   rename(label = Label)
+# sub_data <- sub_data %>%
+#   rename(participant = Participant) %>%
+#   mutate(`Dominant hand` = as.factor(`Dominant hand`),
+#          Gender = as.factor(Gender),
+#          `Height (cm)` = as.double(`Height (cm)`),
+#          `Weight (kg)` = as.double(`Weight (kg)`))
 all_data <- final_data %>% 
-  left_join(survey, by=c("participant", "label")) %>% 
-  left_join(sub_data, by=c("participant")) %>% 
+  # left_join(survey, by=c("participant", "label")) %>% 
+  #left_join(sub_data, by=c("participant")) %>% 
   filter(label != 1) %>% 
   mutate(label = case_when(
     label ==  2 ~ 1,
@@ -412,7 +412,7 @@ lr_model_final_wrist_chest <- train(label ~ sd_EDA + sd_EDA_wrist + sd_Temp_ches
                                     data = train, trControl = train_control, 
                                     method = "glm",
                                     family ="binomial")
-summary(lr_model_final_wrist_chest)
+#summary(lr_model_final_wrist_chest)
 ```
 
 ```{r logistic-regression-metrics}
@@ -449,6 +449,8 @@ Using data from both the chest-worn and wrist-worn wearables, our model reports 
 table1 <- tidy(table(tibble("target" = test$label,
                             "prediction" = predict(lr_model_final_wrist, test))))
 pcm1 <- plot_confusion_matrix(table1, 
+                              add_row_percentages = FALSE,
+                              add_col_percentages = FALSE,
                               targets_col = "target", 
                               predictions_col = "prediction",
                               counts_col = "n") + 
@@ -456,14 +458,17 @@ pcm1 <- plot_confusion_matrix(table1,
   ggplot2::theme(plot.subtitle = element_text(hjust = 0.5))
 table2 <- tidy(table(tibble("target" = test$label,
                             "prediction" = predict(lr_model_final_wrist_chest, test))))
-pcm2 <- plot_confusion_matrix(table2, 
+pcm2 <- plot_confusion_matrix(table2,   
+                              #add_normalized = FALSE,
+                              add_row_percentages = FALSE,
+                              add_col_percentages = FALSE,
                               targets_col = "target", 
                               predictions_col = "prediction",
                               counts_col = "n") + 
   ggplot2::labs(subtitle = "Chest & Wrist Data (Model 2)") + 
   ggplot2::theme(plot.subtitle = element_text(hjust = 0.5))
 gridExtra::grid.arrange(pcm1, pcm2, ncol=2, 
-                        bottom = textGrob("Figure 3: Confusion Matrices on Model Predictive Accuracy for model trained on only  \n wrist data and wrist and chest data combined", gp = gpar(fontsize = 6)))
+                        bottom = textGrob("Figure 3: Confusion Matrices on Model Predictive Accuracy for model trained on only  \n Wrist Data and Wrist and Chest data combined", gp = gpar(fontsize = 6)))
 ```
 
 From the metrics displayed in Table 2 and the confusion matrices in Figure 3, it seems that both the wrist model and chest & wrist models have relatively high classification accuracies when detecting stress vs. amusement. 
@@ -790,7 +795,7 @@ lr_model_final_wrist_coef_tidy_df %>%
          `p.value` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", ifelse(`p.value`  == 0, "< 2e-16", `p.value`))
   ) %>% 
   kableExtra::kable( booktabs = T,  escape = F, 
-                     caption = "Cofficients obtained with Model 1 (Wrist Model)",
+                     caption = "Coefficients obtained with Model 1 (Wrist Model)",
                      col.names = c("Coefficient", "Estimate", "Std. Error", "p-value")) %>% 
   kableExtra::pack_rows("Participant", 8,22, escape = F) %>% 
   kableExtra::pack_rows("$\\sigma^W_{ACC}$ * Participant", 23,35, escape = F) %>% 
@@ -873,7 +878,7 @@ lr_model_final_wrist_chest_coef_tidy_df %>%
   filter(row_number() <= 49) %>% 
   
   kableExtra::kable( booktabs = T, escape = F, 
-                     caption = "Cofficients obtained with  Model 2 (Chest and Wrist Model)",
+                     caption = "Coefficients obtained with  Model 2 (Chest and Wrist Model)",
                      col.names = c("Coefficient", "Estimate", "Std. Error", "p-value")) %>% 
   #kable_styling(latex_options = c("hold_position")) %>% 
   kableExtra::pack_rows("Participant", 20,34, escape = F) %>% 
@@ -892,13 +897,14 @@ lr_model_final_wrist_chest_coef_tidy_df %>%
   filter(row_number() > 49) %>% 
   
   kableExtra::kable( booktabs = T, escape = F, 
-                     caption = "Cofficients obtained with  Model 2 (Chest and Wrist Model)",
+                     caption = "Coefficients obtained with  Model 2 (Chest and Wrist Model)",
                      col.names = c("Coefficient", "Estimate", "Std. Error", "p-value")) %>% 
   #kable_styling(latex_options = c("hold_position")) %>% 
   kableExtra::pack_rows("$\\sigma^C_{HR}$ * Participant", 1,15, escape = F) %>% 
   column_spec(1, width = "4cm") %>% 
   column_spec(column = c(2:4), latex_column_spec = "c") 
 ```
+
 ```{r}
 lr_model_final_wrist_coef_tidy_df %>% 
   filter(term %in% lr_model_final_wrist_coef_tidy_df$term[str_detect(lr_model_final_wrist_coef_tidy_df$term, "participant")] 
@@ -911,62 +917,67 @@ lr_model_final_wrist_coef_tidy_df %>%
          term = str_replace_all(term, pattern = "sd_ACC_wrist_mag:", replacement = "$\\\\sigma^W_{ACC}$ * ")) %>%
   mutate_if(is.double, round, digits = 3) %>%
   kableExtra::kable(booktabs = T,  escape = F, 
-                    caption = "Cofficients obtained with Model 1 - Quantifying Hetereogeneity") 
+                    caption = "Coefficients obtained with Model 1 - Quantifying Hetereogeneity") 
 
 lr_model_final_wrist_chest_coef_tidy_df %>% 
   filter(term %in% lr_model_final_wrist_chest_coef_tidy_df$term[str_detect(lr_model_final_wrist_chest_coef_tidy_df$term, "participant")] 
   ) %>% 
-  mutate(`Log Odds` = estimate,
+  mutate(Term = term,
+         `Log Odds` = estimate,
+         `Std. Error` = std.error,
          Odds = exp(`Log Odds`)) %>% 
-  dplyr::select(term, `Log Odds`, Odds) %>% 
-  mutate(term = str_remove_all(term, "participant"),
-         term = str_remove_all(term, "`"),
-         term = str_replace_all(term, pattern = "rms_heart_rate_variability_wrist_BVP:", replacement = "$rms^W_{HRV}$ * "),
-         term = str_replace_all(term, pattern = "sd_heart_rate_chest_ECG:", replacement = "$\\\\sigma^C_{HR}$ * ")) %>%
+  dplyr::select(Term, `Log Odds`,`Std. Error`, Odds) %>% 
+  mutate(Term = str_remove_all(Term, "participant"),
+         Term = str_remove_all(Term, "`"),
+         Term = str_replace_all(Term, pattern = "rms_heart_rate_variability_wrist_BVP:", replacement = "$rms^W_{HRV}$ * "),
+         Term = str_replace_all(Term, pattern = "sd_heart_rate_chest_ECG:", replacement = "$\\\\sigma^C_{HR}$ * ")) %>%
   mutate_if(is.double, round, digits = 3) %>%
   kableExtra::kable(booktabs = T,  escape = F, 
-                    caption = "Cofficients obtained with Model 2 - Quantifying Hetereogeneity") 
+                    caption = "Coefficients obtained with Model 2 - Quantifying Hetereogeneity") %>%   
+  kableExtra::pack_rows("Participant", 1,14, escape = F) %>% 
+  kableExtra::pack_rows("$rms^W_{HRV}$ * Participant", 15,28, escape = F) %>%   
+  kableExtra::pack_rows("$\\\\sigma^C_{HR}$ * Participant", 29,42, escape = F) 
 ```
 
 ## VIF 
 
 ```{r}
 reordered_terms_wrist <- c(#"(Intercept)", 
-                           "sd_EDA_wrist", "sd_ACC_wrist_mag",  
-                           "sd_heart_rate_variability_wrist_BVP", "`sd_EDA_wrist:sd_ACC_wrist_mag`",
-                           "`sd_EDA_wrist:sd_heart_rate_variability_wrist_BVP`",
-                           "`sd_ACC_wrist_mag:sd_heart_rate_variability_wrist_BVP`",
-                           #"S10", 
-                           "participantS2", "participantS3", "participantS4","participantS5", "participantS6",
-                           "participantS7","participantS8","participantS9","participantS11","participantS13",
-                           "participantS14","participantS15","participantS16","participantS17",
-                           #"$\\sigma^W_{ACC}$ * S10",
-                           "`sd_ACC_wrist_mag:participantS2`", "`sd_ACC_wrist_mag:participantS3`",
-                           "`sd_ACC_wrist_mag:participantS4`","`sd_ACC_wrist_mag:participantS5`",
-                           "`sd_ACC_wrist_mag:participantS6`","`sd_ACC_wrist_mag:participantS7`",
-                           "`sd_ACC_wrist_mag:participantS8`","`sd_ACC_wrist_mag:participantS9`",
-                           "`sd_ACC_wrist_mag:participantS11`","`sd_ACC_wrist_mag:participantS13`",
-                           "`sd_ACC_wrist_mag:participantS14`","`sd_ACC_wrist_mag:participantS15`",
-                           "`sd_ACC_wrist_mag:participantS16`","`sd_ACC_wrist_mag:participantS17`"
-                           
+  "sd_EDA_wrist", "sd_ACC_wrist_mag",  
+  "sd_heart_rate_variability_wrist_BVP", "`sd_EDA_wrist:sd_ACC_wrist_mag`",
+  "`sd_EDA_wrist:sd_heart_rate_variability_wrist_BVP`",
+  "`sd_ACC_wrist_mag:sd_heart_rate_variability_wrist_BVP`",
+  #"S10", 
+  "participantS2", "participantS3", "participantS4","participantS5", "participantS6",
+  "participantS7","participantS8","participantS9","participantS11","participantS13",
+  "participantS14","participantS15","participantS16","participantS17",
+  #"$\\sigma^W_{ACC}$ * S10",
+  "`sd_ACC_wrist_mag:participantS2`", "`sd_ACC_wrist_mag:participantS3`",
+  "`sd_ACC_wrist_mag:participantS4`","`sd_ACC_wrist_mag:participantS5`",
+  "`sd_ACC_wrist_mag:participantS6`","`sd_ACC_wrist_mag:participantS7`",
+  "`sd_ACC_wrist_mag:participantS8`","`sd_ACC_wrist_mag:participantS9`",
+  "`sd_ACC_wrist_mag:participantS11`","`sd_ACC_wrist_mag:participantS13`",
+  "`sd_ACC_wrist_mag:participantS14`","`sd_ACC_wrist_mag:participantS15`",
+  "`sd_ACC_wrist_mag:participantS16`","`sd_ACC_wrist_mag:participantS17`"
+  
 )
 wrist_rows <- c(#"(Intercept)", 
-                "$\\sigma^W_{EDA}$", "$\\sigma^W_{ACC}$",  
-                "$\\sigma^W_{HRV}$", "$\\sigma^W_{EDA}$ * $\\sigma^W_{ACC}$",
-                "$\\sigma^W_{EDA}$ * $\\sigma^W_{HRV}$",
-                "$\\sigma^W_{ACC}$ * $\\sigma^W_{HRV}$`",
-                #"S10", 
-                "S2", "S3", "S4","S5", "S6",
-                "S7","S8","S9","S11","S13",
-                "S14","S15","S16","S17",
-                #"$\\sigma^W_{ACC}$ * S10", 
-                "$\\sigma^W_{ACC}$ * S2", "$\\sigma^W_{ACC}$ * S3",
-                "$\\sigma^W_{ACC}$ * S4","$\\sigma^W_{ACC}$ * S5",
-                "$\\sigma^W_{ACC}$ * S6","$\\sigma^W_{ACC}$ * S7",
-                "$\\sigma^W_{ACC}$ * S8","$\\sigma^W_{ACC}$ * S9",
-                "$\\sigma^W_{ACC}$ * S11","$\\sigma^W_{ACC}$ * S13",
-                "$\\sigma^W_{ACC}$ * S14","$\\sigma^W_{ACC}$ * S15",
-                "$\\sigma^W_{ACC}$ * S16","$\\sigma^W_{ACC}$ * S17"                     
+  "$\\sigma^W_{EDA}$", "$\\sigma^W_{ACC}$",  
+  "$\\sigma^W_{HRV}$", "$\\sigma^W_{EDA}$ * $\\sigma^W_{ACC}$",
+  "$\\sigma^W_{EDA}$ * $\\sigma^W_{HRV}$",
+  "$\\sigma^W_{ACC}$ * $\\sigma^W_{HRV}$`",
+  #"S10", 
+  "S2", "S3", "S4","S5", "S6",
+  "S7","S8","S9","S11","S13",
+  "S14","S15","S16","S17",
+  #"$\\sigma^W_{ACC}$ * S10", 
+  "$\\sigma^W_{ACC}$ * S2", "$\\sigma^W_{ACC}$ * S3",
+  "$\\sigma^W_{ACC}$ * S4","$\\sigma^W_{ACC}$ * S5",
+  "$\\sigma^W_{ACC}$ * S6","$\\sigma^W_{ACC}$ * S7",
+  "$\\sigma^W_{ACC}$ * S8","$\\sigma^W_{ACC}$ * S9",
+  "$\\sigma^W_{ACC}$ * S11","$\\sigma^W_{ACC}$ * S13",
+  "$\\sigma^W_{ACC}$ * S14","$\\sigma^W_{ACC}$ * S15",
+  "$\\sigma^W_{ACC}$ * S16","$\\sigma^W_{ACC}$ * S17"                     
 )
 car::vif(lr_model_final_wrist$finalModel) %>% 
   tidy() %>% 
@@ -981,64 +992,64 @@ car::vif(lr_model_final_wrist$finalModel) %>%
 
 ```{r}
 reordered_terms_wrist_chest <- c(#"(Intercept)", 
-                                 "sd_EDA" , "sd_EDA_wrist", "sd_Temp_chest" , 
-                                 "min_Temp_wrist" , "min_EMG" , "sd_inhale" , "sd_exhale" , "max_breath" , "i_e_ratio" , "mean_ACC_chest_mag" ,
-                                 "sd_ACC_chest_mag" , "sd_ACC_wrist_mag" , 
-                                 "sd_heart_rate_wrist_BVP" , "sd_heart_rate_variability_wrist_BVP" , "rms_heart_rate_variability_wrist_BVP",
-                                 "sd_heart_rate_chest_ECG" , "rms_heart_rate_variability_chest_ECG",
-                                 "`sd_EDA_wrist:min_Temp_wrist`",
-                                # "S10", 
-                                 "participantS2", "participantS3", "participantS4","participantS5", "participantS6",
-                                 "participantS7","participantS8","participantS9","participantS11","participantS13",
-                                 "participantS14","participantS15","participantS16","participantS17",
-                                 #"$rms^W_{HRV}$ * S10", 
-                                 "`rms_heart_rate_variability_wrist_BVP:participantS2`", "`rms_heart_rate_variability_wrist_BVP:participantS3`",
-                                 "`rms_heart_rate_variability_wrist_BVP:participantS4`","`rms_heart_rate_variability_wrist_BVP:participantS5`",
-                                 "`rms_heart_rate_variability_wrist_BVP:participantS6`",
-                                 "`rms_heart_rate_variability_wrist_BVP:participantS7`","`rms_heart_rate_variability_wrist_BVP:participantS8`",
-                                 "`rms_heart_rate_variability_wrist_BVP:participantS9`","`rms_heart_rate_variability_wrist_BVP:participantS11`",
-                                 "`rms_heart_rate_variability_wrist_BVP:participantS13`",
-                                 "`rms_heart_rate_variability_wrist_BVP:participantS14`","`rms_heart_rate_variability_wrist_BVP:participantS15`",
-                                 "`rms_heart_rate_variability_wrist_BVP:participantS16`","`rms_heart_rate_variability_wrist_BVP:participantS17`",
-                                # "$\\sigma^C_{HR}$ * S10",
-                                 "`sd_heart_rate_chest_ECG:participantS2`", "`sd_heart_rate_chest_ECG:participantS3`",
-                                 "`sd_heart_rate_chest_ECG:participantS4`","`sd_heart_rate_chest_ECG:participantS5`",
-                                 "`sd_heart_rate_chest_ECG:participantS6`",
-                                 "`sd_heart_rate_chest_ECG:participantS7`","`sd_heart_rate_chest_ECG:participantS8`",
-                                 "`sd_heart_rate_chest_ECG:participantS9`","`sd_heart_rate_chest_ECG:participantS11`",
-                                 "`sd_heart_rate_chest_ECG:participantS13`",
-                                 "`sd_heart_rate_chest_ECG:participantS14`","`sd_heart_rate_chest_ECG:participantS15`",
-                                 "`sd_heart_rate_chest_ECG:participantS16`","`sd_heart_rate_chest_ECG:participantS17`"
+  "sd_EDA" , "sd_EDA_wrist", "sd_Temp_chest" , 
+  "min_Temp_wrist" , "min_EMG" , "sd_inhale" , "sd_exhale" , "max_breath" , "i_e_ratio" , "mean_ACC_chest_mag" ,
+  "sd_ACC_chest_mag" , "sd_ACC_wrist_mag" , 
+  "sd_heart_rate_wrist_BVP" , "sd_heart_rate_variability_wrist_BVP" , "rms_heart_rate_variability_wrist_BVP",
+  "sd_heart_rate_chest_ECG" , "rms_heart_rate_variability_chest_ECG",
+  "`sd_EDA_wrist:min_Temp_wrist`",
+  # "S10", 
+  "participantS2", "participantS3", "participantS4","participantS5", "participantS6",
+  "participantS7","participantS8","participantS9","participantS11","participantS13",
+  "participantS14","participantS15","participantS16","participantS17",
+  #"$rms^W_{HRV}$ * S10", 
+  "`rms_heart_rate_variability_wrist_BVP:participantS2`", "`rms_heart_rate_variability_wrist_BVP:participantS3`",
+  "`rms_heart_rate_variability_wrist_BVP:participantS4`","`rms_heart_rate_variability_wrist_BVP:participantS5`",
+  "`rms_heart_rate_variability_wrist_BVP:participantS6`",
+  "`rms_heart_rate_variability_wrist_BVP:participantS7`","`rms_heart_rate_variability_wrist_BVP:participantS8`",
+  "`rms_heart_rate_variability_wrist_BVP:participantS9`","`rms_heart_rate_variability_wrist_BVP:participantS11`",
+  "`rms_heart_rate_variability_wrist_BVP:participantS13`",
+  "`rms_heart_rate_variability_wrist_BVP:participantS14`","`rms_heart_rate_variability_wrist_BVP:participantS15`",
+  "`rms_heart_rate_variability_wrist_BVP:participantS16`","`rms_heart_rate_variability_wrist_BVP:participantS17`",
+  # "$\\sigma^C_{HR}$ * S10",
+  "`sd_heart_rate_chest_ECG:participantS2`", "`sd_heart_rate_chest_ECG:participantS3`",
+  "`sd_heart_rate_chest_ECG:participantS4`","`sd_heart_rate_chest_ECG:participantS5`",
+  "`sd_heart_rate_chest_ECG:participantS6`",
+  "`sd_heart_rate_chest_ECG:participantS7`","`sd_heart_rate_chest_ECG:participantS8`",
+  "`sd_heart_rate_chest_ECG:participantS9`","`sd_heart_rate_chest_ECG:participantS11`",
+  "`sd_heart_rate_chest_ECG:participantS13`",
+  "`sd_heart_rate_chest_ECG:participantS14`","`sd_heart_rate_chest_ECG:participantS15`",
+  "`sd_heart_rate_chest_ECG:participantS16`","`sd_heart_rate_chest_ECG:participantS17`"
 )
 chest_wrist_rows <- c(#"(Intercept)", 
-                      "$\\sigma^C_{EDA}$" , "$\\sigma^W_{EDA}$", "$\\sigma^C_{T}$" , 
-                      "$min^W_{T}$" , "$min^C_{EMG}$" , "$\\sigma_{inhale}$" , "$\\sigma_{exhale}$" , "$max_{breath}$" , "$ ie_{ratio}$" , "$\\mu^C_{ACC}$" ,
-                      "$\\sigma^C_{ACC}$" , "$\\sigma^W_{ACC}$" , 
-                      "$\\sigma^W_{HR}$" , "$\\sigma^W_{HRV}$" , "$rms^W_{HRV}$",
-                      "$\\sigma^C_{HR}$" , "$rms^C_{HRV}$",
-                      "$\\sigma^W_{EDA}$ * $min^W_{T}$",
-                      #"S10", 
-                      "S2", "S3", "S4","S5", "S6",
-                      "S7","S8","S9","S11","S13",
-                      "S14","S15","S16","S17",
-                      #"$rms^W_{HRV}$ * S10", 
-                      "$rms^W_{HRV}$ * S2", "$rms^W_{HRV}$ * S3",
-                      "$rms^W_{HRV}$ * S4","$rms^W_{HRV}$ * S5",
-                      "$rms^W_{HRV}$ * S6",
-                      "$rms^W_{HRV}$ * S7","$rms^W_{HRV}$ * S8",
-                      "$rms^W_{HRV}$ * S9","$rms^W_{HRV}$ * S11",
-                      "$rms^W_{HRV}$ * S13",
-                      "$rms^W_{HRV}$ * S14","$rms^W_{HRV}$ * S15",
-                      "$rms^W_{HRV}$ * S16","$rms^W_{HRV}$ * S17",
-                      #"$\\sigma^C_{HR}$ * S10",
-                      "$\\sigma^C_{HR}$ * S2", "$\\sigma^C_{HR}$ * S3",
-                      "$\\sigma^C_{HR}$ * S4","$\\sigma^C_{HR}$ * S5",
-                      "$\\sigma^C_{HR}$ * S6",
-                      "$\\sigma^C_{HR}$ * S7","$\\sigma^C_{HR}$ * S8",
-                      "$\\sigma^C_{HR}$ * S9","$\\sigma^C_{HR}$ * S11",
-                      "$\\sigma^C_{HR}$ * S13",
-                      "$\\sigma^C_{HR}$ * S14","$\\sigma^C_{HR}$ * S15",
-                      "$\\sigma^C_{HR}$ * S16","$\\sigma^C_{HR}$ * S17"
+  "$\\sigma^C_{EDA}$" , "$\\sigma^W_{EDA}$", "$\\sigma^C_{T}$" , 
+  "$min^W_{T}$" , "$min^C_{EMG}$" , "$\\sigma_{inhale}$" , "$\\sigma_{exhale}$" , "$max_{breath}$" , "$ ie_{ratio}$" , "$\\mu^C_{ACC}$" ,
+  "$\\sigma^C_{ACC}$" , "$\\sigma^W_{ACC}$" , 
+  "$\\sigma^W_{HR}$" , "$\\sigma^W_{HRV}$" , "$rms^W_{HRV}$",
+  "$\\sigma^C_{HR}$" , "$rms^C_{HRV}$",
+  "$\\sigma^W_{EDA}$ * $min^W_{T}$",
+  #"S10", 
+  "S2", "S3", "S4","S5", "S6",
+  "S7","S8","S9","S11","S13",
+  "S14","S15","S16","S17",
+  #"$rms^W_{HRV}$ * S10", 
+  "$rms^W_{HRV}$ * S2", "$rms^W_{HRV}$ * S3",
+  "$rms^W_{HRV}$ * S4","$rms^W_{HRV}$ * S5",
+  "$rms^W_{HRV}$ * S6",
+  "$rms^W_{HRV}$ * S7","$rms^W_{HRV}$ * S8",
+  "$rms^W_{HRV}$ * S9","$rms^W_{HRV}$ * S11",
+  "$rms^W_{HRV}$ * S13",
+  "$rms^W_{HRV}$ * S14","$rms^W_{HRV}$ * S15",
+  "$rms^W_{HRV}$ * S16","$rms^W_{HRV}$ * S17",
+  #"$\\sigma^C_{HR}$ * S10",
+  "$\\sigma^C_{HR}$ * S2", "$\\sigma^C_{HR}$ * S3",
+  "$\\sigma^C_{HR}$ * S4","$\\sigma^C_{HR}$ * S5",
+  "$\\sigma^C_{HR}$ * S6",
+  "$\\sigma^C_{HR}$ * S7","$\\sigma^C_{HR}$ * S8",
+  "$\\sigma^C_{HR}$ * S9","$\\sigma^C_{HR}$ * S11",
+  "$\\sigma^C_{HR}$ * S13",
+  "$\\sigma^C_{HR}$ * S14","$\\sigma^C_{HR}$ * S15",
+  "$\\sigma^C_{HR}$ * S16","$\\sigma^C_{HR}$ * S17"
 )
 car::vif(lr_model_final_wrist_chest$finalModel) %>% 
   tidy() %>% 
