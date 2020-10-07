@@ -1,0 +1,91 @@
+---
+title: "sandbox.rmd"
+author: "Scott Heng"
+date: "9/29/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(psych)
+```
+
+```{r, echo=FALSE}
+data <- readRDS("final_data.Rds")
+raw_data <- readRDS("chest_and_wrist.Rds")
+```
+
+```{r}
+
+EDA_wrist_eng_df <- data %>% dplyr::select(participant, label, mean_EDA_wrist:range_EDA_wrist) 
+
+raw_data_mod <- raw_data[!(raw_data$Label==1),]
+
+# chest EDA
+chest_EDA <- raw_data_mod %>% 
+  mutate(row = row_number()) %>% 
+  ggplot(aes(x = row, y = EDA, color = as.factor(Label))) + 
+  geom_line() + 
+  scale_x_discrete(labels = abbreviate) +
+  labs(title = "Chest EDA vs Time by Participant", x="Time", y="EDA (RespiBAN)", caption = "Fig 1.1 Plot of RespiBAN (Chest) EDA samples collected over \n time by participant and label (2- stress, 3-amusement)") +
+  theme(plot.title = element_text(hjust = 0.5), , plot.caption = element_text(hjust = 0.5)) +
+  facet_wrap(Participant~. ,  scales = "free")
+
+# wrist EDA
+wrist_EDA <- raw_data_mod %>% 
+  mutate(row = row_number()) %>% 
+  ggplot(aes(x = row, y = EDA_wrist, color = as.factor(Label))) + 
+  geom_line() + 
+  scale_x_discrete(labels = abbreviate) +
+  labs(title = "Wrist EDA vs Time by Participant", x="Time", y="EDA (E4)", caption = "Fig 1.2 Plot of E4 (Wrist) EDA samples collected over time by \n participant and label (2- stress, 3-amusement)") +
+  theme(plot.title = element_text(hjust = 0.5), , plot.caption = element_text(hjust = 0.5)) +
+  facet_wrap(Participant~. ,  scales = "free")
+
+# ACC plots
+data_mod <- data[!(data$label==1),]
+
+peak_wrist_ACC_Z_plot <- ggplot(data_mod, aes(peak_wrist_ACC_Z, color = as.factor(label))) + 
+  geom_histogram(bindwith=30) +
+  labs(title = "Histogram of Peak Wrist ACC Z samples by Participant", y="Count",x = "Peak Wrist ACC Z", caption = "Fig 2.1 Histogram of peak acc wrist samples  \n by participant and label (2- stress, 3-amusement)") +
+  theme(plot.title = element_text(hjust = 0.5), , plot.caption = element_text(hjust = 0.5)) +
+  facet_wrap(~participant)
+
+mean_ACC_chest_mag_plot <- ggplot(data_mod, aes(mean_ACC_chest_mag, color = as.factor(label))) +
+  geom_histogram(bindwith=30) +
+  labs(title = "Histogram of Mean ACC Chest Mag samples by Participant", y="Count", x = "Mean ACC Chest Mag", caption = "Fig 2.2 Histogram of mean acc chest \n magnitude samples by participant and label (2- stress, 3-amusement)") +
+  theme(plot.title = element_text(hjust = 0.5), plot.caption = element_text(hjust = 0.5)) +
+  facet_wrap(~participant)
+```
+```{r}
+panel.cor <- function(x, y, ...)
+{
+par(usr = c(0, 1, 0, 1))
+txt <- as.character(format(cor(x, y), digits=2))
+text(0.5, 0.5, txt, cex = 6* abs(cor(x, y)))
+}
+```
+
+```{r fig.width = 12,fig.height = 4}
+gridExtra::grid.arrange(chest_EDA, wrist_EDA, ncol=2)
+```
+
+```{r fig.width = 12,fig.height = 4}
+gridExtra::grid.arrange(peak_wrist_ACC_Z_plot, mean_ACC_chest_mag_plot, ncol=2)
+```
+```{r fig.width = 6,fig.height = 4"}
+# Correlation plots
+# wrist EDA correlation
+#can only be saved as png
+pairs.panels(EDA_wrist_eng_df[,-c(1,2)], 
+             method = "pearson", # correlation method
+             hist.col = "#00AFBB",
+             density = TRUE,  # show density plots
+             main = "Correlation Matrix of Features within EDA signal variable"
+             )
+```
+
+
