@@ -2,7 +2,7 @@
 title: "Detecting Stress Using Wearables"
 author: "Matty Pahren, Scott Heng On, Ethan Shen"
 fontsize: 11pt
-geometry: "left=1.3cm,right=1.3cm,top=1.2cm,bottom=1.3cm"
+geometry: "left=1.3cm,right=1.3cm,top=1.2cm,bottom=1.2cm"
 indent: true
 header-includes:
     - \usepackage{indentfirst}
@@ -256,9 +256,9 @@ panel.cor <- function(x, y, ...)
 
 The WESAD dataset [[2]][Bibliography] contains 63 million samples of raw physiological and motion signal data collected from 15 test subjects (12 male, 3 female) with ages between 24-35. The data was collected using 2 devices: a chest-worn device (RespiBAN) and a wrist-worn device (Empatica E4). The RespiBAN chest data includes electrocardiography (ECG) data in mV, electrodermal activity (EDA) in microseconds, electromyography (EMG) data in mV, skin temperature (TEMP) in °C, displacement of the thorax for males and the abdomen for females induced by inhaling or exhaling (RESP) as a percentage, and 3-axis accelerometer (ACC) data in g - the acceleration of gravity. All RespiBAN data were recorded at 700 Hz. The E4 wrist data collected includes blood volume pulse (BVP) data (64Hz), ACC data in units of 1/64g (32Hz), EDA in microseconds (4Hz), and TEMP in °C (4Hz). Each sample also references a label corresponding to the study protocol condition, with each label referring to a different condition (1-baseline, 2-stress, 3-amusement, 4-meditation). These conditions were recorded by having participants exposed to sources of stimulation that would elicit the desired condition. The labels 0, 5, 6, 7  indicate that the data should be ignored. The dataset also included information about each subject, such as height, weight and age, as well as personal responses to PANAS and SSSQ questionnaires. Considering the nature of the WESAD dataset and the scope of our study, we decided to filter out samples that did not represent stress or amusement.
 
-For example, Figure 1.1 and 1.2 show plots of the EDA signal data by participant and by condition showing different values when the participant experienced different conditions, and this difference is captured both in the chest and wrist data. Since we only took samples for 2 conditions, we could desirably observe a relative equal distribution of samples in both groups. However, raw signal data only provides limited information and difficult interpretability, and therefore from these raw data signals, we performed data and domain-driven feature engineering to generate potential predictor variables for our model that were easily interpretable and well represented the information in the data. We generated a total of 50 features across  all the raw signal variables.
+Figure 1.1 and 1.2 show plots of the EDA signal data by participant and by condition showing different values when the participant experienced different conditions, and this difference is captured both in the chest and wrist data. Since we only took samples for 2 conditions, we could desirably observe a relative equal distribution of samples in both groups. However, raw signal data only provides limited information and difficult interpretability, and therefore from these raw data signals, we performed data and domain-driven feature engineering to generate potential predictor variables for our model that were easily interpretable and well represented the information in the data. We generated a total of 50 features across  all the raw signal variables.
 
-```{r fig.width = 12,fig.height = 4}
+```{r fig.width = 13,fig.height = 3.75}
 gridExtra::grid.arrange(chest_EDA, wrist_EDA, ncol=2)
 ```
 
@@ -274,7 +274,7 @@ To calculate the respiration variables, we had to separate out inhales and exhal
 
 For ACC, we also calculated the 3D magnitude, $ACC = \sqrt{ACC_X^2 + ACC_Y^2 + ACC_Z^2}$. We then calculated the mean, standard deviation, maximum, minimum and range of these modalities; a summary of all predictor variables is given in Table 1. 
 
-```{r fig.width = 12,fig.height = 4}
+```{r fig.width = 12,fig.height = 3.5}
 gridExtra::grid.arrange(peak_wrist_ACC_Z_plot, mean_ACC_chest_mag_plot, ncol=2)
 ```
 
@@ -457,8 +457,6 @@ It is also worth discussing independence when evaluating our logistic regression
 
 ### Sensitivity Analysis 
 
-Since there is no standard sampling frequency in the literature, we first examine the sensitivity of our sampling rate of 4 Hz. Table 3 displays the results of the wrist data and all data models (Models 3 and 4), with the same predictors as Models 1 and 2, when using data that was sampled at 1 Hz. In general, Models 1 and 2 perform better on the training data, while Models 3 and 4 perform better on the testing data. There is also higher variability in the metrics of the models using data sampled at 1 Hz - this is because we are using a much smaller sample size, which leads to higher sampling variability. We then compare the estimates of Models 3 and 4 to those of Models 1 and 2, respectively; the estimates for Models 3 and 4 are located in Table XX and XX in the Appendix. Both the wrist-only and combined data models are reasonably robust, since we report similar estimates for the predictors; this, along with the minimal difference in metrics, suggests that our data is not highly sensitive to different sampling frequencies.  
-
 ```{r}
 train_1Hz <- train %>%
   slice(which(row_number() %% 4 == 1))
@@ -495,11 +493,15 @@ lr_model_final_wrist_chest_1Hz <- train(label ~ sd_EDA + sd_EDA_wrist + sd_Temp_
 #   pull(diff) %>% quantile()
 ```
 
-```{r }
+```{r}
 final_wrist_lr_model_df_1Hz <- calc_metrics(lr_model_final_wrist_1Hz, test_1Hz, 5) %>% 
   mutate(model = "Wrist Only (Model 3)")
 final_wrist_chest_lr_model_df_1Hz <- calc_metrics(lr_model_final_wrist_chest_1Hz, test_1Hz, 5) %>% 
   mutate(model = "Chest & Wrist (Model 4)")
+```
+
+
+```{r eval=FALSE}
 bind_rows(final_wrist_lr_model_df_1Hz, final_wrist_chest_lr_model_df_1Hz) %>% 
   dplyr::select(model, everything()) %>% 
   kable( booktabs = T,  align = "c",
@@ -576,7 +578,9 @@ lr_model_final_wrist_chest_60window <- train(label ~ participant + sd_EDA + sd_E
 
 
 ```{r}
-bind_rows(calc_metrics(lr_model_final_wrist_60window, test_60window, 5) %>% 
+bind_rows(final_wrist_lr_model_df_1Hz, 
+          final_wrist_chest_lr_model_df_1Hz,
+          calc_metrics(lr_model_final_wrist_60window, test_60window, 5) %>% 
             mutate(model = "Wrist Only (Model 5)"), 
           calc_metrics(lr_model_final_wrist_chest_60window, test_60window, 5) %>% 
             mutate(model = "Chest & Wrist (Model 6)")) %>% 
@@ -589,10 +593,12 @@ bind_rows(calc_metrics(lr_model_final_wrist_60window, test_60window, 5) %>%
   add_header_above(c(" " = 1, "Cross Validation Data" = 3, "Test Data" = 3), escape = F)
 ```
 
-Additionally, we fit wrist-only and combined models (5 and 6) using data that was sampled using a 60 second window size and a 0.25 second window shift (as compared to a 5 second window size and 0.25 second window shift). We trained this set of models using the same predictors that we used in the final models (Model 1 and Model 2). In general, this set of models performed better in terms of evaluation metrics, as seen in Table 4. Similarly, we compare the estimates from this set of models to the estimates from our original models; these estimates are displayed in Tables XX and XX in the Appendix. Our wrist-only model appears to be reasonably robust, as most estimates using data sampled using a 60 second window size and a 0.25 second window shift were similar to the estimates from Model 1. However, the combined data model was less robust, as there are estimates, such as the one for the standard deviations of chest EDA that were quite different (1.12 vs. 2.36 for Model 2 vs. Model 6). This disparity could be due to the loss of data when sampling using a 60 second window, the choice to initially downsample our data to 4Hz or other external factors that these features could not capture in these models.
+Since there is no standard sampling frequency in the literature, we first examine the sensitivity of our sampling rate of 4 Hz. The first two rows of Table 3 displays the results of the wrist data and all data models (Models 3 and 4), with the same predictors as Models 1 and 2, when using data that was sampled at 1 Hz. In general, Models 1 and 2 perform better on the training data, while Models 3 and 4 perform better on the testing data. There is also higher variability in the metrics of the models using data sampled at 1 Hz - this is because we are using a much smaller sample size, which leads to higher sampling variability. We then compare the estimates of Models 3 and 4 to those of Models 1 and 2, respectively; the estimates for Models 3 and 4 are located in Table XX and XX in the Appendix. Both the wrist-only and combined data models are reasonably robust, since we report similar estimates for the predictors; this, along with the minimal difference in metrics, suggests that our data is not highly sensitive to different sampling frequencies.  
 
+The last two rows of Table 3 displays the results of the wrist data and all data models (Models 5 and 6), with the same predictors as Models 1 and 2, when using data that was sampled using a 60 second window size and a 0.25 second window shift (as compared to a 5 second window size and 0.25 second window shift). In general, this set of models performed better in terms of evaluation metrics, as seen in Table 4. Similarly, we compare the estimates from this set of models to the estimates from our original models; these estimates are displayed in Tables XX and XX in the Appendix. Our wrist-only model appears to be reasonably robust, as most estimates using data sampled using a 60 second window size and a 0.25 second window shift were similar to the estimates from Model 1. However, the combined data model was less robust, as there are estimates, such as the one for the standard deviations of chest EDA that were quite different (1.12 vs. 2.36 for Model 2 vs. Model 6). This disparity could be due to the loss of data when sampling using a 60 second window, the choice to initially downsample our data to 4Hz or other external factors that these features could not capture in these models.
 
 ### Comparison to Other Models
+
 In addition to our logistic regressions, we also ran a random forest model on the data. In our wrist-only random forest model, we found that min wrist EDA, max wrist EDA, range of wrist EDA and standard deviation of Z wrist ACC were the only significant predictors. While we don't see these exact predictors in our logistic regression, we had standard deviation of wrist EDA and standard deviation of wrist ACC in our final model, and these variables are highly correlated with the ones in our random forest model. 
 For the model built with chest and wrist data, we saw that max wrist EDA and standard deviation of chest ACC were the only two important predictors outside of participant. Standard deviation of chest ACC also occurs in our logistic regression, however instead of max wrist EDA, we see standard deviation of wrist EDA. Again, these two variables are highly correlated, so that seems to make sense. Further discussion of our random forests models can be found in the appendix. 
 
@@ -639,7 +645,7 @@ It is also interesting to note that in the model built with chest and wrist data
 
 ## Quantifying Heterogeneity 
 
-```{r calculate-CIs, echo = F}
+```{r calculate-CIs, eval = FALSE}
 lr_model_final_wrist_coef_tidy_df <- lr_model_final_wrist$finalModel %>% 
   tidy() %>%
   dplyr::select(-statistic) %>% 
