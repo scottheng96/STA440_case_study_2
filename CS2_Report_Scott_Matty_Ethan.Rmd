@@ -373,9 +373,9 @@ naive_wrist <- lr_model_final_wrist$pred %>%
   summarize(count = n()) %>% 
   mutate(prop = count / sum(count)) %>% 
   filter(obs == 1) 
-summary(lr_model_final_wrist$finalModel)
+#summary(lr_model_final_wrist$finalModel)
 
-ggplot(data = all_data, aes(x = sd_EDA_wrist, color = label)) + geom_histogram() + facet_wrap(participant~., scales = "free")
+#ggplot(data = all_data, aes(x = sd_EDA_wrist, color = label)) + geom_histogram() + facet_wrap(participant~., scales = "free")
 ``` 
 
 ```{r full-logistic-model}
@@ -460,37 +460,49 @@ It is also worth discussing independence when evaluating our logistic regression
 
 ### Sensitivity Analysis 
 
-Since there is no standard sampling frequency in the literature, we first examine the sensitivity of our sampling rate of 4 Hz. Table 3 displays the results of the wrist data and all data models, with the same predictors as Models 1 and 2, when using data that was sampled at 1 Hz. In general, the models using data sampled at 4 Hz perform better on the training data, while the models using data sampled at 1 Hz perform better on the testing data. There is also higher variability in the metrics of the models using data sampled at 1 Hz - this is because we are using a much smaller sample size, which leads to higher sampling variability. However, the difference in metrics is very minimal; thus we can verify that our results are not highly sensitive to different sampling frequencies. 
+Since there is no standard sampling frequency in the literature, we first examine the sensitivity of our sampling rate of 4 Hz. Table 3 displays the results of the wrist data and all data models (Models 3 and 4), with the same predictors as Models 1 and 2, when using data that was sampled at 1 Hz. In general, Models 1 and 2 perform better on the training data, while Models 3 and 4 perform better on the testing data. There is also higher variability in the metrics of the models using data sampled at 1 Hz - this is because we are using a much smaller sample size, which leads to higher sampling variability. We then compare the estimates of Models 3 and 4 to those of Models 1 and 2, respectively; the estimates for Models 3 and 4 are located in Table XX and XX in the Appendix. Both the wrist-only and combined data models are reasonably robust, since we report similar estimates for the predictors; this, along with the minimal difference in metrics, suggests that our data is not highly sensitive to different sampling frequencies.  
 
 ```{r}
 train_1Hz <- train %>%
   slice(which(row_number() %% 4 == 1))
 test_1Hz <- test %>%
   slice(which(row_number() %% 4 == 1))
-lr_model_final_wrist_1Hz <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
-                                    sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag + 
+lr_model_final_wrist_1Hz <- train(label ~ sd_EDA_wrist + sd_ACC_wrist_mag + sd_heart_rate_variability_wrist_BVP + 
                                     sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + 
-                                    sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP,
+                                    sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP + 
+                                    participant + participant:sd_ACC_wrist_mag,
                                   data = train_1Hz, trControl = train_control, 
                                   method = "glm",
                                   family ="binomial") 
-lr_model_final_wrist_chest_1Hz <- train(label ~ participant + sd_EDA + sd_EDA_wrist + sd_Temp_chest + 
+lr_model_final_wrist_chest_1Hz <- train(label ~ sd_EDA + sd_EDA_wrist + sd_Temp_chest + 
                                           min_Temp_wrist + min_EMG + sd_inhale + sd_exhale + max_breath + 
                                           i_e_ratio + mean_ACC_chest_mag + sd_ACC_chest_mag + sd_ACC_wrist_mag + 
                                           sd_heart_rate_wrist_BVP + sd_heart_rate_variability_wrist_BVP + rms_heart_rate_variability_wrist_BVP + 
-                                          sd_heart_rate_chest_ECG + rms_heart_rate_variability_chest_ECG + 
-                                          rms_heart_rate_variability_wrist_BVP*participant + sd_heart_rate_chest_ECG*participant + 
-                                          sd_EDA_wrist * min_Temp_wrist, # try different interactions 
+                                          sd_heart_rate_chest_ECG + rms_heart_rate_variability_chest_ECG  + 
+                                          sd_EDA_wrist * min_Temp_wrist + participant +
+                                          rms_heart_rate_variability_wrist_BVP*participant + sd_heart_rate_chest_ECG*participant, # try different interactions 
                                         data = train_1Hz, trControl = train_control, 
                                         method = "glm",
                                         family ="binomial")
+
+
+# summary(lr_model_final_wrist_chest$finalModel) %>% coef() %>% as.data.frame() %>% tibble::rownames_to_column() %>% 
+#   left_join(summary(lr_model_final_wrist_chest_1Hz$finalModel) %>% coef() %>% as.data.frame() %>% tibble::rownames_to_column(), by = "rowname") %>% 
+#   mutate(diff = Estimate.x - Estimate.y) %>% 
+#   pull(diff) %>% quantile()
+# 
+# 
+# summary(lr_model_final_wrist$finalModel) %>% coef() %>% as.data.frame() %>% tibble::rownames_to_column() %>% 
+#   left_join(summary(lr_model_final_wrist_1Hz$finalModel) %>% coef() %>% as.data.frame() %>% tibble::rownames_to_column(), by = "rowname") %>% 
+#   mutate(diff = Estimate.x - Estimate.y) %>% 
+#   pull(diff) %>% quantile()
 ```
 
 ```{r }
 final_wrist_lr_model_df_1Hz <- calc_metrics(lr_model_final_wrist_1Hz, test_1Hz, 5) %>% 
-  mutate(model = "Wrist Only")
+  mutate(model = "Wrist Only (Model 3)")
 final_wrist_chest_lr_model_df_1Hz <- calc_metrics(lr_model_final_wrist_chest_1Hz, test_1Hz, 5) %>% 
-  mutate(model = "Chest & Wrist")
+  mutate(model = "Chest & Wrist (Model 4)")
 bind_rows(final_wrist_lr_model_df_1Hz, final_wrist_chest_lr_model_df_1Hz) %>% 
   dplyr::select(model, everything()) %>% 
   kable( booktabs = T,  align = "c",
@@ -521,7 +533,7 @@ bind_rows(final_wrist_lr_model_df_1Hz, final_wrist_chest_lr_model_df_1Hz) %>%
 
 
 ```{r}
-final_data_60_window <- readRDS("final_data_240s_window.Rds") %>% 
+final_data_60_window <- readRDS("final_data_60s_window.Rds") %>% 
   filter(label != 1) %>% 
   mutate(label = case_when(
     label ==  2 ~ 1,
@@ -536,95 +548,58 @@ train_60window = final_data_60_window[idx, ]
 test_60window = final_data_60_window[-idx, ]
 train_control <- trainControl(method="repeatedcv", number = 5, savePredictions = T) # this is the cross validation
 
-lr_model_final_wrist_60window <- train(label ~ sd_EDA_wrist + 
-                                         sd_ACC_wrist_mag + sd_heart_rate_variability_wrist_BVP + 
-                              sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + 
-                                sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP + 
-                                participant #+ participant:sd_heart_rate_variability_wrist_BVP
-                             ,
-                                  data = train_60window, trControl = train_control, 
-                                  method = "glm",
-                                  family ="binomial") 
-lr_model_final_wrist_chest_60window <- train(label ~ participant + #sd_EDA +# sd_EDA_wrist + 
-                                               sd_Temp_chest + 
-                                          min_Temp_wrist + min_EMG + sd_inhale + sd_exhale + max_breath + 
-                                          i_e_ratio + mean_ACC_chest_mag + sd_ACC_chest_mag + sd_ACC_wrist_mag + 
-                                         sd_heart_rate_wrist_BVP + sd_heart_rate_variability_wrist_BVP + 
-                                           rms_heart_rate_variability_wrist_BVP + 
-                                          sd_heart_rate_chest_ECG + rms_heart_rate_variability_chest_ECG #+ 
-                                        # + rms_heart_rate_variability_wrist_BVP*participant + 
-                                       +  sd_heart_rate_chest_ECG*participant  
-                                         + sd_Temp_chest * min_Temp_wrist
-                                         , # try different interactions 
-                                        data = train_60window, trControl = train_control, 
-                                        method = "glm",
-                                        family ="binomial")
+lr_model_final_wrist_60window <- train(label ~ sd_EDA_wrist + sd_ACC_wrist_mag + sd_heart_rate_variability_wrist_BVP + 
+                                         sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + 
+                                         sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP + 
+                                         participant + participant:sd_ACC_wrist_mag,
+                                       data = train_60window, trControl = train_control, 
+                                       method = "glm",
+                                       family ="binomial") 
+lr_model_final_wrist_chest_60window <- train(label ~ participant + sd_EDA + sd_EDA_wrist + sd_Temp_chest + 
+                                               min_Temp_wrist + min_EMG + sd_inhale + sd_exhale + max_breath + 
+                                               i_e_ratio + mean_ACC_chest_mag + sd_ACC_chest_mag + sd_ACC_wrist_mag + 
+                                               sd_heart_rate_wrist_BVP + sd_heart_rate_variability_wrist_BVP + rms_heart_rate_variability_wrist_BVP + 
+                                               sd_heart_rate_chest_ECG + rms_heart_rate_variability_chest_ECG + 
+                                               # rms_heart_rate_variability_wrist_BVP*participant + sd_heart_rate_chest_ECG*participant + 
+                                               sd_EDA_wrist * min_Temp_wrist,
+                                             data = train_60window, trControl = train_control, 
+                                             method = "glm",
+                                             family ="binomial")
 
-calc_metrics(lr_model_final_wrist_60window, test_60window, 5)
-summary(lr_model_final_wrist_60window$finalModel)
-calc_metrics(lr_model_final_wrist_chest_60window, test_60window, 5)
-summary(lr_model_final_wrist_chest_60window$finalModel)
+# summary(lr_model_final_wrist_chest$finalModel) %>% coef() %>% as.data.frame() %>% tibble::rownames_to_column() %>% 
+#   left_join(summary(lr_model_final_wrist_chest_60window$finalModel) %>% coef() %>% as.data.frame() %>% tibble::rownames_to_column(), by = "rowname") %>% 
+#   mutate(diff = Estimate.x - Estimate.y) %>% 
+#   pull(diff) %>% quantile(na.rm=T)
+# 
+# summary(lr_model_final_wrist$finalModel) %>% coef() %>% as.data.frame() %>% tibble::rownames_to_column() %>% 
+#   left_join(summary(lr_model_final_wrist_60window$finalModel) %>% coef() %>% as.data.frame() %>% tibble::rownames_to_column(), by = "rowname") %>% 
+#   mutate(diff = Estimate.x - Estimate.y) %>% 
+#   pull(diff) %>% quantile(na.rm=T)
 ```
 
 
-```{r eval=FALSE}
-# drop in deviance test
-lr_model_final_wrist_v2 <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
-                                   sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag + 
-                                   + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + 
-                                   sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP,
-                                 data = train, trControl = train_control, 
-                                 method = "glm",
-                                 family ="binomial") 
-calc_metrics(lr_model_final_wrist_v2, test, 5)
-anova(lr_model_final_wrist_v2$finalModel, lr_model_final_wrist$finalModel,  test = "Chisq")
-```
-
-
-```{r eval=FALSE}
-#sensitivity analysis with 10 folds --> pretty much the same 
-lr_model_final_wrist10_folds <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
-                                        sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag + 
-                                        sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + 
-                                        sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP,
-                                      data = train, trControl = trainControl(method="repeatedcv", number = 10, savePredictions = T), 
-                                      method = "glm",
-                                      family ="binomial") 
-lr_model_final_wrist_chest10_folds <- train(label ~ participant + sd_EDA + sd_EDA_wrist + sd_Temp_chest + 
-                                              min_Temp_wrist + min_EMG + sd_inhale + sd_exhale + max_breath + 
-                                              i_e_ratio + mean_ACC_chest_mag + sd_ACC_chest_mag + sd_ACC_wrist_mag + 
-                                              sd_heart_rate_wrist_BVP + sd_heart_rate_variability_wrist_BVP + rms_heart_rate_variability_wrist_BVP + 
-                                              sd_heart_rate_chest_ECG + rms_heart_rate_variability_chest_ECG + 
-                                              rms_heart_rate_variability_wrist_BVP*participant + sd_heart_rate_chest_ECG*participant + 
-                                              sd_EDA_wrist * min_Temp_wrist, # try different interactions 
-                                            data = train, trControl = trainControl(method="repeatedcv", number = 10, savePredictions = T), 
-                                            method = "glm",
-                                            family ="binomial")
-```
-
-```{r eval=FALSE}
-final_wrist_lr_model_df_10 <- calc_metrics(lr_model_final_wrist10_folds, test, 10) %>% 
-  mutate(model = "Wrist Only")
-final_wrist_chest_lr_model_df_10 <- calc_metrics(lr_model_final_wrist_chest10_folds, test, 10) %>% 
-  mutate(model = "Chest & Wrist")
-bind_rows(final_wrist_lr_model_df_10, final_wrist_chest_lr_model_df_10) %>% 
+```{r}
+bind_rows(calc_metrics(lr_model_final_wrist_60window, test_60window, 5) %>% 
+            mutate(model = "Wrist Only (Model 5)"), 
+          calc_metrics(lr_model_final_wrist_chest_60window, test_60window, 5) %>% 
+            mutate(model = "Chest & Wrist (Model 6)")) %>% 
   dplyr::select(model, everything()) %>% 
-  kable(booktabs = T, 
-        caption = "Model Results with 10-fold Cross Validation, with Mean and Standard Deviation reported",
-        col.names = c("Model", "Accuracy", "F1-Score", "AUC", "Accuracy", "F1-Score", "AUC"
-        )) %>% 
+  kable( booktabs = T,  align = "c",
+         caption = "Model Results with Data Sampled using 60s window size and 0.25s window shift",
+         col.names = c("Model", "Accuracy", "F1-Score", "AUC", "Accuracy", "F1-Score", "AUC"
+         )) %>% 
   kable_styling(latex_options = c("hold_position")) %>%
-  add_header_above(c(" " = 1, "Cross Validation Data" = 3, "Test Data" = 3))
-#We conduct sensitivity analysis by using 10-fold cross validation on our training data. We see that the accuracy, $F_1$, and AUC on the training and testing data are very similar. 
+  add_header_above(c(" " = 1, "Cross Validation Data" = 3, "Test Data" = 3), escape = F)
 ```
 
-
+Additionally, we fit wrist-only and combined models (5 and 6) using data that was sampled using a 60 second window size and a 0.25 second window shift (as compared to a 5 second window size and 0.25 second window shift). We trained this set of models using the same predictors that we used in the final models (Model 1 and Model 2). In general, this set of models performed better in terms of evaluation metrics. We then compare the estimates from this set of models to the estimates from our original models; the estimates are displayed in Tables XX and XX in the Appendix. Our wrist-only model appears to be reasonably robust, as most estimates using data sampled using a 60 second window size and a 0.25 second window shift were similar to the estimates from Model 1. However, the combined data model was less robust, as there are estimates, such as the one for the standard deviations of chest EDA that were quite different (1.12 vs. 2.36 for Model 2 vs. Model 6). This disparity could be due to the loss of data when sampling using a 60 second window, or due to the choice to initially downsample our data to 4Hz. 
 
 # Discussion
 
 ## Interpretation of Predictors
 
 ### Wrist-Only Model
+
 When standard deviation of wrist EDA increases by 1, we expect the odds of being stressed versus amused to multiply by a factor of `r round(exp(3.826), 3)` (with 95% CI `r round(exp(3.6888), 3)`, `r round(exp(3.9632), 3)`), holding all else constant. 
 When standard deviation of wrist ACC increases by 1, we expect the odds of being stressed versus amused to multiply by a factor of `r round(exp(0.445), 3)` (with 95% CI `r round(exp(2.76076), 3)`, `r round(exp(4.59924), 3)`), holding all else constant. 
 When standard deviation of wrist HRV increases by 1, we expect the odds of being stressed versus amused to multiply by a factor of `r round(exp(4.027), 3)` (with 95% CI `r round(exp(0.3568), 3)`, `r round(exp(0.5332), 3)`), holding all else constant. 
@@ -658,7 +633,7 @@ When standard deviation of chest HR increases by 1, we expect the odds of being 
 
 Additionally, holding all else constant, when standard deviation of wrist HRV and minimum wrist temperature both increase by 1, we expect the odds of being stressed versus amused multiply by an additional factor of `r round(exp(-4.665), 3)` (with 95% CI `r round(exp(-4.8218), 3)`, `r round(exp(-4.5082), 3)`).
 
-It is also interesting to note that in the model built with chest and wrist data, most of our predictors appear to be standard deviation measures, and in the wrist-only model, participant is the only non-standard deviation predictor. This observation suggests that the variability in physiological signals is a more important distinguisher of stress and amusement as opposed to the magnitude of these signals in many cases. 
+It is also interesting to note that in the model built with chest and wrist data, most of our predictors appear to be standard deviation measures, and in the wrist-only model, participant is the only non-standard deviation predictor. This observation suggests that the variability in physiological signals is a more important distinguisher of stress and amusement as opposed to the mean or maximum of these signals in many cases. 
 
 ## Quantifying Heterogeneity 
 
@@ -701,7 +676,7 @@ Since it appears that the wrist wearable is sufficient for detecting stress vers
 
 9. P.Westermark (2015). Package ‘peakPick’. https://cran.r-project.org/web/packages/peakPick/peakPick.pdf
 
-  
+
 ## Random Forest Model
 
 ```{r random-forests, eval=FALSE}
@@ -801,7 +776,7 @@ stepAIC(mlm, direction = "backward", trace = TRUE, data = train)
 ```
 
 
-##  Model Output
+## Model Output
 
 ```{r wrist-log-model-coef}
 lr_model_final_wrist_coef_tidy_df <- lr_model_final_wrist$finalModel %>% 
@@ -851,14 +826,15 @@ lr_model_final_wrist_coef_tidy_df %>%
          estimate = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "(Reference)", estimate),
          `std.error` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", `std.error`),
          `p.value` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", ifelse(`p.value`  == 0, "< 2e-16", `p.value`)),
-        `lower.ci` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", as.numeric(estimate) - 1.96*as.numeric(std.error)),
-        `upper.ci` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", as.numeric(estimate) + 1.96*as.numeric(std.error))
+         `lower.ci` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", as.numeric(estimate) - 1.96*as.numeric(std.error)),
+         `upper.ci` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", as.numeric(estimate) + 1.96*as.numeric(std.error))
   ) %>% 
   kableExtra::kable( booktabs = T,  escape = F, 
-                     caption = "Coefficients obtained with Model 1 (Wrist Model)",
+                     caption = "Coefficients obtained with Model 1 (Wrist Model, Data Sampled at 4Hz)",
                      col.names = c("Coefficient", "Estimate", "Std. Error", "p-value", "Lower CI", "Upper CI")) %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
   kableExtra::pack_rows("Participant", 8,22, escape = F) %>% 
-  kableExtra::pack_rows("$\\sigma^W_{ACC}$ * Participant", 23,35, escape = F) %>% 
+  kableExtra::pack_rows("$\\sigma^W_{ACC}$ * Participant", 23,37, escape = F) %>% 
   column_spec(1, width = "4cm") %>% 
   column_spec(column = c(2:4), latex_column_spec = "c") 
 ```
@@ -934,15 +910,14 @@ lr_model_final_wrist_chest_coef_tidy_df %>%
          estimate = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10" | term ==  "$\\sigma^C_{HR}$ * S10", "(Reference)", estimate),
          `std.error` = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10"| term ==  "$\\sigma^C_{HR}$ * S10", "", `std.error`),
          `p.value` = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10"| term ==  "$\\sigma^C_{HR}$ * S10", "", ifelse(`p.value`  == 0, "< 2e-16", `p.value`)),
-`lower.ci` = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10", "", as.numeric(estimate) - 1.96*as.numeric(std.error)),
-        `upper.ci` = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10", "", as.numeric(estimate) + 1.96*as.numeric(std.error))
+         `lower.ci` = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10", "", as.numeric(estimate) - 1.96*as.numeric(std.error)),
+         `upper.ci` = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10", "", as.numeric(estimate) + 1.96*as.numeric(std.error))
   )%>%
   filter(row_number() <= 49) %>%
-
   kableExtra::kable( booktabs = T, escape = F,
-                     caption = "Coefficients obtained with  Model 2 (Chest and Wrist Model)",
+                     caption = "Coefficients obtained with  Model 2 (Chest and Wrist Model, Data Sampled at 4Hz)",
                      col.names = c("Coefficient", "Estimate", "Std. Error", "p-value", "Lower CI", "Upper CI")) %>%
-  #kable_styling(latex_options = c("hold_position")) %>%
+  kable_styling(latex_options = c("hold_position")) %>%
   kableExtra::pack_rows("Participant", 20,34, escape = F) %>%
   kableExtra::pack_rows("$rms^W_{HRV}$ * Participant", 35,49, escape = F) %>%
   column_spec(1, width = "4cm") %>%
@@ -955,17 +930,170 @@ lr_model_final_wrist_chest_coef_tidy_df %>%
          estimate = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10" | term ==  "$\\sigma^C_{HR}$ * S10", "(Reference)", estimate),
          `std.error` = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10"| term ==  "$\\sigma^C_{HR}$ * S10", "", `std.error`),
          `p.value` = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10"| term ==  "$\\sigma^C_{HR}$ * S10", "", ifelse(`p.value`  == 0, "< 2e-16", `p.value`)),
-        `lower.ci` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", as.numeric(estimate) - 1.96*as.numeric(std.error)),
-        `upper.ci` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", as.numeric(estimate) + 1.96*as.numeric(std.error))
+         `lower.ci` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", as.numeric(estimate) - 1.96*as.numeric(std.error)),
+         `upper.ci` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", as.numeric(estimate) + 1.96*as.numeric(std.error))
   )%>% 
   filter(row_number() > 49) %>% 
   kableExtra::kable( booktabs = T, escape = F, 
-                     caption = "Coefficients obtained with  Model 2 (Chest and Wrist Model)",
+                     caption = "Coefficients obtained with  Model 2 (Chest and Wrist Model, Data Sampled at 4Hz)",
                      col.names = c("Coefficient", "Estimate", "Std. Error", "p-value", "Lower CI", "Upper CI")) %>% 
-  #kable_styling(latex_options = c("hold_position")) %>% 
+  kable_styling(latex_options = c("hold_position")) %>% 
   kableExtra::pack_rows("$\\sigma^C_{HR}$ * Participant", 1,15, escape = F) %>% 
   column_spec(1, width = "4cm") %>% 
   column_spec(column = c(2:4), latex_column_spec = "c") 
+```
+
+
+```{r}
+lr_model_final_wrist_1Hz_coef_tidy_df <- lr_model_final_wrist_1Hz$finalModel %>% 
+  tidy() %>%
+  dplyr::select(-statistic) %>% 
+  bind_rows(tibble(term = c("S10", "$\\sigma^W_{ACC}$ * S10"), 
+                   estimate = c(0,0), `std.error` = c(0,0), `p.value`= c(0,0))) 
+
+lr_model_final_wrist_1Hz_coef_tidy_df %>% 
+  slice(match(reordered_terms_wrist, term)) %>%
+  mutate_if(is.numeric, round, digits = 3) %>% 
+  mutate(term = wrist_rows,
+         estimate = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "(Reference)", estimate),
+         `std.error` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", `std.error`),
+         `p.value` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", ifelse(`p.value`  == 0, "< 2e-16", `p.value`)),
+         `lower.ci` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", as.numeric(estimate) - 1.96*as.numeric(std.error)),
+         `upper.ci` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", as.numeric(estimate) + 1.96*as.numeric(std.error))
+  ) %>% 
+  kableExtra::kable( booktabs = T,  escape = F, 
+                     caption = "Coefficients obtained with Model 3 (Wrist Model, Data Sampled at 1Hz)",
+                     col.names = c("Coefficient", "Estimate", "Std. Error", "p-value", "Lower CI", "Upper CI")) %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  kableExtra::pack_rows("Participant", 8,22, escape = F) %>% 
+  kableExtra::pack_rows("$\\sigma^W_{ACC}$ * Participant", 23,37, escape = F) %>% 
+  column_spec(1, width = "4cm") %>% 
+  column_spec(column = c(2:4), latex_column_spec = "c") 
+
+lr_model_final_wrist_chest_1Hz_coef_tidy_df <- lr_model_final_wrist_chest_1Hz$finalModel %>% 
+  tidy() %>%
+  dplyr::select(-statistic) %>% 
+  bind_rows(tibble(term = c("S10", "$rms^W_{HRV}$ * S10", "$\\sigma^C_{HR}$ * S10"), 
+                   estimate = c(0,0,0), `std.error` = c(0,0,0), `p.value`= c(0,0,0))) 
+
+lr_model_final_wrist_chest_1Hz_coef_tidy_df %>%
+  slice(match(reordered_terms_wrist_chest, term)) %>%
+  mutate_if(is.numeric, round, digits = 3) %>%
+  mutate(term = chest_wrist_rows,
+         estimate = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10" | term =="$\\sigma^C_{HR}$ * S10", "(Reference)", estimate),
+         `std.error` = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10"| term ==  "$\\sigma^C_{HR}$ * S10", "", `std.error`),
+         `p.value` = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10"| term ==  "$\\sigma^C_{HR}$ * S10", "", ifelse(`p.value`  == 0, "< 2e-16", `p.value`)),
+         `lower.ci` = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10", "", as.numeric(estimate) - 1.96*as.numeric(std.error)),
+         `upper.ci` = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10", "", as.numeric(estimate) + 1.96*as.numeric(std.error))
+  )%>%
+  filter(row_number() <= 49) %>%
+  
+  kableExtra::kable( booktabs = T, escape = F,
+                     caption = "Coefficients obtained with Model 4 (Chest and Wrist Model, Data Sampled at 1Hz)",
+                     col.names = c("Coefficient", "Estimate", "Std. Error", "p-value", "Lower CI", "Upper CI")) %>%
+  kable_styling(latex_options = c("hold_position")) %>%
+  kableExtra::pack_rows("Participant", 20,34, escape = F) %>%
+  kableExtra::pack_rows("$rms^W_{HRV}$ * Participant", 35,49, escape = F) %>%
+  column_spec(1, width = "4cm") %>%
+  column_spec(column = c(2:4), latex_column_spec = "c")
+
+lr_model_final_wrist_chest_1Hz_coef_tidy_df %>% 
+  slice(match(reordered_terms_wrist_chest, term)) %>% 
+  mutate_if(is.numeric, round, digits = 3) %>% 
+  mutate(term = chest_wrist_rows,
+         estimate = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10" | term ==  "$\\sigma^C_{HR}$ * S10", "(Reference)", estimate),
+         `std.error` = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10"| term ==  "$\\sigma^C_{HR}$ * S10", "", `std.error`),
+         `p.value` = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10"| term ==  "$\\sigma^C_{HR}$ * S10", "", ifelse(`p.value`  == 0, "< 2e-16", `p.value`)),
+         `lower.ci` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", as.numeric(estimate) - 1.96*as.numeric(std.error)),
+         `upper.ci` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", as.numeric(estimate) + 1.96*as.numeric(std.error))
+  )%>% 
+  filter(row_number() > 49) %>% 
+  kableExtra::kable( booktabs = T, escape = F, 
+                     caption = "Coefficients obtained with Model 4 (Chest and Wrist Model, Data Sampled at 1Hz)",
+                     col.names = c("Coefficient", "Estimate", "Std. Error", "p-value", "Lower CI", "Upper CI")) %>% 
+  kable_styling(latex_options = c("hold_position")) %>% 
+  kableExtra::pack_rows("$\\sigma^C_{HR}$ * Participant", 1,15, escape = F) %>% 
+  column_spec(1, width = "4cm") %>% 
+  column_spec(column = c(2:4), latex_column_spec = "c") 
+```
+
+
+```{r}
+lr_model_final_wrist_60window$finalModel %>% 
+  tidy() %>%
+  dplyr::select(-statistic) %>% 
+  bind_rows(tibble(term = c("S10", "$\\sigma^W_{ACC}$ * S10"), 
+                   estimate = c(0,0), `std.error` = c(0,0), `p.value`= c(0,0))) %>% 
+  slice(match(reordered_terms_wrist, term)) %>%
+  mutate_if(is.numeric, round, digits = 3) %>% 
+  mutate(term = wrist_rows,
+         estimate = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "(Reference)", estimate),
+         `std.error` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", `std.error`),
+         `p.value` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", ifelse(`p.value`  == 0, "< 2e-16", `p.value`)),
+         `lower.ci` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", as.numeric(estimate) - 1.96*as.numeric(std.error)),
+         `upper.ci` = ifelse(term == "S10" | term == "$\\sigma^W_{ACC}$ * S10", "", as.numeric(estimate) + 1.96*as.numeric(std.error))
+  ) %>% 
+  kableExtra::kable( booktabs = T,  escape = F, 
+                     caption = "Coefficients obtained with Model 5 (Wrist Model, Data Sampled using 60s Window Shift)",
+                     col.names = c("Coefficient", "Estimate", "Std. Error", "p-value", "Lower CI", "Upper CI")) %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  kableExtra::pack_rows("Participant", 8,22, escape = F) %>% 
+  kableExtra::pack_rows("$\\sigma^W_{ACC}$ * Participant", 23,37, escape = F) %>% 
+  column_spec(1, width = "4cm") %>% 
+  column_spec(column = c(2:4), latex_column_spec = "c")
+```
+
+
+```{r}
+lr_model_final_wrist_chest_60window_coef_tidy_df <- lr_model_final_wrist_chest_60window$finalModel %>% 
+  tidy() %>%
+  dplyr::select(-statistic) %>% 
+  bind_rows(tibble(term = c("S10", "$rms^W_{HRV}$ * S10", "$\\sigma^C_{HR}$ * S10"), 
+                   estimate = c(0,0,0), `std.error` = c(0,0,0), `p.value`= c(0,0,0))) 
+
+
+reordered_terms_wrist_chest <- c("(Intercept)", "sd_EDA" , "sd_EDA_wrist", "sd_Temp_chest" , 
+                                 "min_Temp_wrist" , "min_EMG" , "sd_inhale" , "sd_exhale" , "max_breath" , "i_e_ratio" , "mean_ACC_chest_mag" ,
+                                 "sd_ACC_chest_mag" , "sd_ACC_wrist_mag" , 
+                                 "sd_heart_rate_wrist_BVP" , "sd_heart_rate_variability_wrist_BVP" , "rms_heart_rate_variability_wrist_BVP",
+                                 "sd_heart_rate_chest_ECG" , "rms_heart_rate_variability_chest_ECG",
+                                 "`sd_EDA_wrist:min_Temp_wrist`",
+                                 "S10", 
+                                 "participantS2", "participantS3", "participantS4","participantS5", "participantS6",
+                                 "participantS7","participantS8","participantS9","participantS11","participantS13",
+                                 "participantS14","participantS15","participantS16","participantS17"
+)
+chest_wrist_rows <- c("(Intercept)", "$\\sigma^C_{EDA}$" , "$\\sigma^W_{EDA}$", "$\\sigma^C_{T}$" , 
+                      "$min^W_{T}$" , "$min^C_{EMG}$" , "$\\sigma_{inhale}$" , "$\\sigma_{exhale}$" , "$max_{breath}$" , "$ ie_{ratio}$" , "$\\mu^C_{ACC}$" ,
+                      "$\\sigma^C_{ACC}$" , "$\\sigma^W_{ACC}$" , 
+                      "$\\sigma^W_{HR}$" , "$\\sigma^W_{HRV}$" , "$rms^W_{HRV}$",
+                      "$\\sigma^C_{HR}$" , "$rms^C_{HRV}$",
+                      "$\\sigma^W_{EDA}$ * $min^W_{T}$",
+                      "S10", 
+                      "S2", "S3", "S4","S5", "S6",
+                      "S7","S8","S9","S11","S13",
+                      "S14","S15","S16","S17"
+)
+
+
+lr_model_final_wrist_chest_60window_coef_tidy_df %>%
+  slice(match(reordered_terms_wrist_chest, term)) %>%
+  mutate_if(is.numeric, round, digits = 3) %>%
+  mutate(term = chest_wrist_rows,
+         estimate = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10" | term ==  "$\\sigma^C_{HR}$ * S10", "(Reference)", estimate),
+         `std.error` = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10"| term ==  "$\\sigma^C_{HR}$ * S10", "", `std.error`),
+         `p.value` = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10"| term ==  "$\\sigma^C_{HR}$ * S10", "", ifelse(`p.value`  == 0, "< 2e-16", `p.value`)),
+         `lower.ci` = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10", "", as.numeric(estimate) - 1.96*as.numeric(std.error)),
+         `upper.ci` = ifelse(term == "S10" | term == "$rms^W_{HRV}$ * S10", "", as.numeric(estimate) + 1.96*as.numeric(std.error))
+  )%>%
+
+  kableExtra::kable( booktabs = T, escape = F,
+                     caption = "Coefficients obtained with Model 6 (Chest and Wrist Model, Data Sampled using 60s Window Shift)",
+                     col.names = c("Coefficient", "Estimate", "Std. Error", "p-value", "Lower CI", "Upper CI")) %>%
+  kable_styling(latex_options = c("hold_position")) %>%
+  kableExtra::pack_rows("Participant", 20,34, escape = F) %>%
+  column_spec(1, width = "4cm") %>%
+  column_spec(column = c(2:4), latex_column_spec = "c")
 ```
 
 ```{r}
@@ -975,7 +1103,7 @@ lr_model_final_wrist_coef_tidy_df %>%
   mutate(Term = term,
          `Log Odds` = estimate,
          `Std. Error` = std.error,
-          Odds = as.double(exp(`Log Odds`)),
+         Odds = as.double(exp(`Log Odds`)),
          `Lower CI` = round(exp(as.numeric(estimate) - 1.96*as.numeric(std.error)), digits = 3),
          `Upper CI` = round(exp(as.numeric(estimate) + 1.96*as.numeric(std.error)), digits = 3)) %>% 
   dplyr::select(Term, `Log Odds`,`Std. Error`, Odds, `Lower CI`, `Upper CI`) %>% 
@@ -994,7 +1122,7 @@ lr_model_final_wrist_chest_coef_tidy_df %>%
   mutate(Term = term,
          `Log Odds` = estimate,
          `Std. Error` = std.error,
-          Odds = exp(`Log Odds`),
+         Odds = exp(`Log Odds`),
          `Lower CI` = round(exp(as.numeric(estimate) - 1.96*as.numeric(std.error)), digits = 3),
          `Upper CI` = round(exp(as.numeric(estimate) + 1.96*as.numeric(std.error)), digits = 3)) %>% 
   dplyr::select(Term, `Log Odds`,`Std. Error`, Odds, `Lower CI`, `Upper CI`) %>% 
@@ -1156,7 +1284,7 @@ colnames(read_csv("d"))[str_detect(pattern="SSSQ", string = colnames(read_csv("d
 ```
 
 
-```{r calculate-CIs}
+```{r calculate-CIs, eval=FALSE}
 wrist_het_data <- lr_model_final_wrist_coef_tidy_df %>%
   mutate(lower = as.numeric(estimate) - 1.96*as.numeric(std.error),
          upper = as.numeric(estimate) + 1.96*as.numeric(std.error))
@@ -1165,8 +1293,62 @@ chest_wrist_het_data <-  lr_model_final_wrist_chest_coef_tidy_df %>%
   mutate(lower = as.numeric(estimate) - 1.96*as.numeric(std.error),
          upper = as.numeric(estimate) + 1.96*as.numeric(std.error))
 
-ggplot(wrist_het_data) + geom_errorbar(x = term, estimate = estimate, ymin = lower, ymax = upper, data = wrist_het_data)
+ggplot(wrist_het_data) + geom_errorbar(aes(x = term, estimate = estimate, ymin = lower, ymax = upper), data = wrist_het_data)
 
 library(plotrix)
 plotCI(x=wrist_het_data$term,li=wrist_het_data$lower,ui=wrist_het_data$upper, lwd=3,ylim=c(2,4))
 ```
+
+
+
+```{r eval=FALSE}
+# drop in deviance test
+lr_model_final_wrist_v2 <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
+                                   sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag + 
+                                   + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + 
+                                   sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP,
+                                 data = train, trControl = train_control, 
+                                 method = "glm",
+                                 family ="binomial") 
+calc_metrics(lr_model_final_wrist_v2, test, 5)
+anova(lr_model_final_wrist_v2$finalModel, lr_model_final_wrist$finalModel,  test = "Chisq")
+```
+
+
+```{r eval=FALSE}
+#sensitivity analysis with 10 folds --> pretty much the same 
+lr_model_final_wrist10_folds <- train(label ~ participant + sd_EDA_wrist + sd_ACC_wrist_mag + 
+                                        sd_heart_rate_variability_wrist_BVP + participant:sd_ACC_wrist_mag + 
+                                        sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + 
+                                        sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP,
+                                      data = train, trControl = trainControl(method="repeatedcv", number = 10, savePredictions = T), 
+                                      method = "glm",
+                                      family ="binomial") 
+lr_model_final_wrist_chest10_folds <- train(label ~ participant + sd_EDA + sd_EDA_wrist + sd_Temp_chest + 
+                                              min_Temp_wrist + min_EMG + sd_inhale + sd_exhale + max_breath + 
+                                              i_e_ratio + mean_ACC_chest_mag + sd_ACC_chest_mag + sd_ACC_wrist_mag + 
+                                              sd_heart_rate_wrist_BVP + sd_heart_rate_variability_wrist_BVP + rms_heart_rate_variability_wrist_BVP + 
+                                              sd_heart_rate_chest_ECG + rms_heart_rate_variability_chest_ECG + 
+                                              rms_heart_rate_variability_wrist_BVP*participant + sd_heart_rate_chest_ECG*participant + 
+                                              sd_EDA_wrist * min_Temp_wrist, # try different interactions 
+                                            data = train, trControl = trainControl(method="repeatedcv", number = 10, savePredictions = T), 
+                                            method = "glm",
+                                            family ="binomial")
+```
+
+```{r eval=FALSE}
+final_wrist_lr_model_df_10 <- calc_metrics(lr_model_final_wrist10_folds, test, 10) %>% 
+  mutate(model = "Wrist Only")
+final_wrist_chest_lr_model_df_10 <- calc_metrics(lr_model_final_wrist_chest10_folds, test, 10) %>% 
+  mutate(model = "Chest & Wrist")
+bind_rows(final_wrist_lr_model_df_10, final_wrist_chest_lr_model_df_10) %>% 
+  dplyr::select(model, everything()) %>% 
+  kable(booktabs = T, 
+        caption = "Model Results with 10-fold Cross Validation, with Mean and Standard Deviation reported",
+        col.names = c("Model", "Accuracy", "F1-Score", "AUC", "Accuracy", "F1-Score", "AUC"
+        )) %>% 
+  kable_styling(latex_options = c("hold_position")) %>%
+  add_header_above(c(" " = 1, "Cross Validation Data" = 3, "Test Data" = 3))
+#We conduct sensitivity analysis by using 10-fold cross validation on our training data. We see that the accuracy, $F_1$, and AUC on the training and testing data are very similar. 
+```
+
