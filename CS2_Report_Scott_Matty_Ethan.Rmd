@@ -361,9 +361,9 @@ We used accuracy, $F_1$-score, and AUC as evaluation metrics. Accuracy is the nu
 # Results 
 
 ```{r logistic-regression-wrist}
-lr_model_final_wrist <- train(label ~  sd_EDA_wrist + sd_ACC_wrist_mag + #sd_heart_rate_variability_wrist_BVP + 
-                                #sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + 
-                                #sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP + 
+lr_model_final_wrist <- train(label ~  sd_EDA_wrist + sd_ACC_wrist_mag + sd_heart_rate_variability_wrist_BVP + 
+                                sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + 
+                                sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP + 
                                 participant + participant:sd_ACC_wrist_mag,
                               data = train, trControl = train_control, 
                               method = "glm",
@@ -519,6 +519,52 @@ bind_rows(final_wrist_lr_model_df_1Hz, final_wrist_chest_lr_model_df_1Hz) %>%
 # plot_grid(p1, p2, ncol = 2, nrow = 1)
 ```
 
+
+```{r}
+final_data_60_window <- readRDS("final_data_240s_window.Rds") %>% 
+  filter(label != 1) %>% 
+  mutate(label = case_when(
+    label ==  2 ~ 1,
+    label == 3 ~ 0
+  )) %>% 
+  mutate(label = as.factor(label)) %>% 
+  mutate(participant = fct_relevel(participant,  c('S10', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S11', 'S13', 'S14', 'S15', 'S16', 'S17'))) %>% 
+  mutate_if(is.numeric, scale)
+set.seed(20200922)
+idx = createDataPartition(final_data_60_window$label, p = 0.8, list = FALSE)
+train_60window = final_data_60_window[idx, ]
+test_60window = final_data_60_window[-idx, ]
+train_control <- trainControl(method="repeatedcv", number = 5, savePredictions = T) # this is the cross validation
+
+lr_model_final_wrist_60window <- train(label ~ sd_EDA_wrist + 
+                                         sd_ACC_wrist_mag + sd_heart_rate_variability_wrist_BVP + 
+                              sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + 
+                                sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP + 
+                                participant #+ participant:sd_heart_rate_variability_wrist_BVP
+                             ,
+                                  data = train_60window, trControl = train_control, 
+                                  method = "glm",
+                                  family ="binomial") 
+lr_model_final_wrist_chest_60window <- train(label ~ participant + #sd_EDA +# sd_EDA_wrist + 
+                                               sd_Temp_chest + 
+                                          min_Temp_wrist + min_EMG + sd_inhale + sd_exhale + max_breath + 
+                                          i_e_ratio + mean_ACC_chest_mag + sd_ACC_chest_mag + sd_ACC_wrist_mag + 
+                                         sd_heart_rate_wrist_BVP + sd_heart_rate_variability_wrist_BVP + 
+                                           rms_heart_rate_variability_wrist_BVP + 
+                                          sd_heart_rate_chest_ECG + rms_heart_rate_variability_chest_ECG #+ 
+                                        # + rms_heart_rate_variability_wrist_BVP*participant + 
+                                       +  sd_heart_rate_chest_ECG*participant  
+                                         + sd_Temp_chest * min_Temp_wrist
+                                         , # try different interactions 
+                                        data = train_60window, trControl = train_control, 
+                                        method = "glm",
+                                        family ="binomial")
+
+calc_metrics(lr_model_final_wrist_60window, test_60window, 5)
+summary(lr_model_final_wrist_60window$finalModel)
+calc_metrics(lr_model_final_wrist_chest_60window, test_60window, 5)
+summary(lr_model_final_wrist_chest_60window$finalModel)
+```
 
 
 ```{r eval=FALSE}
