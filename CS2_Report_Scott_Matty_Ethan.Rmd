@@ -594,6 +594,10 @@ bind_rows(calc_metrics(lr_model_final_wrist_60window, test_60window, 5) %>%
 
 Additionally, we fit wrist-only and combined models (5 and 6) using data that was sampled using a 60 second window size and a 0.25 second window shift (as compared to a 5 second window size and 0.25 second window shift). We trained this set of models using the same predictors that we used in the final models (Model 1 and Model 2). In general, this set of models performed better in terms of evaluation metrics, as seen in Table 4. Similarly, we compare the estimates from this set of models to the estimates from our original models; these estimates are displayed in Tables XX and XX in the Appendix. Our wrist-only model appears to be reasonably robust, as most estimates using data sampled using a 60 second window size and a 0.25 second window shift were similar to the estimates from Model 1. However, the combined data model was less robust, as there are estimates, such as the one for the standard deviations of chest EDA that were quite different (1.12 vs. 2.36 for Model 2 vs. Model 6). This disparity could be due to the loss of data when sampling using a 60 second window, or due to the choice to initially downsample our data to 4Hz. 
 
+### Comparison to Other Models
+In addition to our logistic regressions, we also ran a random forest model on the data. In our wrist-only random forest model, we found that min wrist EDA, max wrist EDA, range of wrist EDA and standard deviation of Z wrist ACC were the only significant predictors. While we don't see these exact predictors in our logistic regression, we had standard deviation of wrist EDA and standard deviation of wrist ACC in our final model, and these variables are highly correlated with the ones in our random forest model. 
+For the model built with chest and wrist data, we saw that max wrist EDA and standard deviation of chest ACC were the only two important predictors outside of participant. Standard deviation of chest ACC also occurs in our logistic regression, however instead of max wrist EDA, we see standard deviation of wrist EDA. Again, these two variables are highly correlated, so that seems to make sense. Further discussion of our random forests models can be found in the appendix. 
+
 # Discussion
 
 ## Interpretation of Predictors
@@ -805,23 +809,24 @@ Since it appears that the wrist wearable is sufficient for detecting stress vers
 
 ```{r random-forests, eval=FALSE}
 set.seed(20200922)
-forest_data <- all_data %>% 
-  subset(dplyr::select = -c(PANAS_Angry, PANAS_Irritated, SSSQ_Committed, SSSQ_Succeed, SSSQ_Motivated, SSSQ_Reflected, SSSQ_Concerned, SSSQ_Worried, Condition, PANAS_Sad))
-forest_data <- forest_data[1:(length(forest_data)-1)]
-forest_data <- forest_data %>%
-  mutate(participant = as.factor(participant),
-         Age = as.numeric(Age),
-         Hand = as.factor(`Dominant hand`),
-         Gender = as.factor(Gender),
-         Height = as.numeric(`Height (cm)`),
-         Weight = as.numeric(`Weight (kg)`))
-forest_data <- forest_data %>% 
-  subset(dplyr::select = -c(`Dominant hand`, `Height (cm)`, `Weight (kg)`))
+# forest_data <- all_data %>% 
+#   subset(dplyr::select(-c(PANAS_Angry, PANAS_Irritated, SSSQ_Committed, SSSQ_Succeed, SSSQ_Motivated, SSSQ_Reflected, SSSQ_Concerned, SSSQ_Worried, Condition, PANAS_Sad)))
+forest_data <- all_data
+# forest_data <- forest_data[1:(length(forest_data)-1)]
+# forest_data <- forest_data %>%
+#   mutate(participant = as.factor(participant),
+#          Age = as.numeric(Age),
+#          Hand = as.factor(`Dominant hand`),
+#          Gender = as.factor(Gender),
+#          Height = as.numeric(`Height (cm)`),
+#          Weight = as.numeric(`Weight (kg)`))
+# forest_data <- forest_data %>% 
+#   subset(dplyr::select = -c(`Dominant hand`, `Height (cm)`, `Weight (kg)`))
 idx = createDataPartition(forest_data$label, p = 0.8, list = FALSE)
 train = forest_data[idx, ]
 test = forest_data[-idx, ]
-correlationMatrix <- cor(subset(forest_data, dplyr::select = -c(Gender, Hand, participant, label)))
-highlyCorrelated <- findCorrelation(correlationMatrix, cutoff=0.5, verbose = FALSE)
+# correlationMatrix <- cor(subset(forest_data, dplyr::select(-c(participant, label))))
+# highlyCorrelated <- findCorrelation(correlationMatrix, cutoff=0.5, verbose = FALSE)
 require(caTools)
 
 sparse_no_survey_rf <- randomForest(
