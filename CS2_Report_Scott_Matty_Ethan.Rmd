@@ -613,6 +613,7 @@ It is also interesting to note that in the model built with chest and wrist data
 
 ## Quantifying Heterogeneity 
 
+
 In the wrist only model, when compared to the baseline S10 and holding all else constant, we expect the odds of being  stressed for S17 to multiply by $e^{0.256}$, or 1.29, while we expect the odds of being stressed for S7 to multiply by $e^{-5.765}$, or 0.003, and the odds of being stressed for S3 to multiply by $e^{-4.34}$, or 0.013.
 
 For the standard deviation of the magnitude of wrist ACC, when compared to the baseline S10 and holding all else constant,  as the standard deviation of the magnitude of wrist ACC increases by one, we expect the odds of being stressed for S7 to multiply by $e^{10.803}$, or 49168.08 more and the odds of being stressed for S5 to multiply by $e^{6.297}$, or 542.9 more. The values for the wrist only model  are detailed in Table 5. 
@@ -1105,3 +1106,18 @@ read_csv("d") %>%
 colnames(read_csv("d"))[str_detect(pattern="SSSQ", string = colnames(read_csv("d")))]
 ```
 
+
+```{r calculate-CIs}
+wrist_het_data <- lr_model_final_wrist_coef_tidy_df %>%
+  mutate(lower = as.numeric(estimate) - 1.96*as.numeric(std.error),
+         upper = as.numeric(estimate) + 1.96*as.numeric(std.error))
+
+chest_wrist_het_data <-  lr_model_final_wrist_chest_coef_tidy_df %>%
+  mutate(lower = as.numeric(estimate) - 1.96*as.numeric(std.error),
+         upper = as.numeric(estimate) + 1.96*as.numeric(std.error))
+
+ggplot(wrist_het_data) + geom_errorbar(x = term, estimate = estimate, ymin = lower, ymax = upper, data = wrist_het_data)
+
+library(plotrix)
+plotCI(x=wrist_het_data$term,li=wrist_het_data$lower,ui=wrist_het_data$upper, lwd=3,ylim=c(2,4))
+```
