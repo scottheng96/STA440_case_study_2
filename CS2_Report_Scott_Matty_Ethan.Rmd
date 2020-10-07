@@ -173,36 +173,6 @@ calc_metrics = function(model, testing_data, folds) {
 # returns accuracy/F1score/AUC if you run the model using the previous  code
 ```
 
-
-```{r full-logistic-model-d, eval=FALSE}
-lr_model_final_both <- train(label ~ participant + sd_EDA + sd_EDA_wrist + sd_Temp_chest + 
-                               min_Temp_wrist + min_EMG + sd_inhale + sd_exhale + max_breath + 
-                               i_e_ratio + mean_ACC_chest_mag + sd_ACC_chest_mag + sd_ACC_wrist_mag + 
-                               sd_heart_rate_wrist_BVP + sd_heart_rate_variability_wrist_BVP + rms_heart_rate_variability_wrist_BVP + 
-                               sd_heart_rate_chest_ECG + rms_heart_rate_variability_chest_ECG + 
-                               rms_heart_rate_variability_wrist_BVP*participant + sd_heart_rate_chest_ECG*participant + 
-                               sd_EDA_wrist * min_Temp_wrist, # try different interactions 
-                             data = train, trControl = train_control, 
-                             method = "glm",
-                             family ="binomial")
-# saved the model
-save(lr_model_final_both, file = 'lr_model_final_both')
-# Model is pre-ran and save, can be loaded to save time- loading and calling 'model'
-#load('lr_model_final_both')
-lr_model_final_both %>% summary() 
-calc_metrics(lr_model_final_both, test, 5)
-# model
-# prediction
-pred <- predict(lr_model_final_both, test, type="response")
-pred <- ifelse(pred > 0.5, 1, 0)
-mean(pred == test$label)
-target <- test$label
-summary(model)
-car::vif(lr_model_final_both$finalModel)%>% round(2) %>% kable() 
-car::vif(model)%>% round(2) %>% kable() 
-```
-
-
 # Introduction 
 
 Affect recognition seeks to detect a person’s affective state. One of these states is stress, and long-term stress is known to have severe implications on human health and well-being. This study uses the Wearable Stress and Affect Detection (WESAD) dataset, which was introduced in Schmidt et al. [[1]][Bibliography], and achieves classification accuracies of 86.2% on wrist data and 90.8% on all data for the binary classification problem (stress vs. amusement). In conducting this analysis, we aim to determine whether sensor data are useful in predicting stress, and if so, which predictors are most significant when discriminating between stress and amusement. Furthermore, we seek to understand which types of sensor data are most useful in predicting stress, alone or in combination, and to determine if stress can be detected only using the wrist-worn wearable, which is more convenient to wear than a chest-worn device. Finally, we quantify the heterogeneity across individuals in their responses to stress.
@@ -391,9 +361,9 @@ We used accuracy, $F_1$-score, and AUC as evaluation metrics. Accuracy is the nu
 # Results 
 
 ```{r logistic-regression-wrist}
-lr_model_final_wrist <- train(label ~  sd_EDA_wrist + sd_ACC_wrist_mag + sd_heart_rate_variability_wrist_BVP + 
-                                sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + 
-                                sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP + 
+lr_model_final_wrist <- train(label ~  sd_EDA_wrist + sd_ACC_wrist_mag + #sd_heart_rate_variability_wrist_BVP + 
+                                #sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + 
+                                #sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP + 
                                 participant + participant:sd_ACC_wrist_mag,
                               data = train, trControl = train_control, 
                               method = "glm",
@@ -403,8 +373,9 @@ naive_wrist <- lr_model_final_wrist$pred %>%
   summarize(count = n()) %>% 
   mutate(prop = count / sum(count)) %>% 
   filter(obs == 1) 
+summary(lr_model_final_wrist$finalModel)
 
-#confint(lr_model_final_wrist$finalModel)
+ggplot(data = all_data, aes(x = sd_EDA_wrist, color = label)) + geom_histogram() + facet_wrap(participant~., scales = "free")
 ``` 
 
 ```{r full-logistic-model}
@@ -1101,4 +1072,13 @@ car::vif(lr_model_final_wrist_chest$finalModel) %>%
                     caption = "VIF Values - Model 2") 
 ```
 
+
+
+```{r eval=FALSE}
+read_csv("d") %>% 
+  dplyr::select(participant, Label, Condition, "SSSQ_Committed", "SSSQ_Succeed"  , "SSSQ_Motivated", "SSSQ_Reflected", "SSSQ_Worried"  , "SSSQ_Concerned") %>% 
+  na.omit()
+
+colnames(read_csv("d"))[str_detect(pattern="SSSQ", string = colnames(read_csv("d")))]
+```
 
