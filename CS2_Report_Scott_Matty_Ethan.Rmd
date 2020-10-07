@@ -1408,7 +1408,7 @@ colnames(read_csv("d"))[str_detect(pattern="SSSQ", string = colnames(read_csv("d
 ```
 
 
-```{r calculate-CIs, eval=FALSE}
+```{r eval=FALSE}
 wrist_het_data <- lr_model_final_wrist_coef_tidy_df %>%
   mutate(lower = as.numeric(estimate) - 1.96*as.numeric(std.error),
          upper = as.numeric(estimate) + 1.96*as.numeric(std.error))
