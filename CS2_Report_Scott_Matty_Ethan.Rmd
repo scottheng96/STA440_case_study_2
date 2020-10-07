@@ -661,15 +661,138 @@ Additionally, holding all else constant, when standard deviation of wrist HRV an
 It is also interesting to note that in the model built with chest and wrist data, most of our predictors appear to be standard deviation measures, and in the wrist-only model, participant is the only non-standard deviation predictor. This observation suggests that the variability in physiological signals is a more important distinguisher of stress and amusement as opposed to the magnitude of these signals in many cases. 
 
 ## Quantifying Heterogeneity 
+```{r calculate-CIs, echo = F}
+lr_model_final_wrist_coef_tidy_df <- lr_model_final_wrist$finalModel %>% 
+  tidy() %>%
+  dplyr::select(-statistic) %>% 
+  bind_rows(tibble(term = c("S10", "$\\sigma^W_{ACC}$ * S10"), 
+                   estimate = c(0,0), `std.error` = c(0,0), `p.value`= c(0,0))) 
+reordered_terms_wrist <- c("(Intercept)", "sd_EDA_wrist", "sd_ACC_wrist_mag",  
+                           "sd_heart_rate_variability_wrist_BVP", "`sd_EDA_wrist:sd_ACC_wrist_mag`",
+                           "`sd_EDA_wrist:sd_heart_rate_variability_wrist_BVP`",
+                           "`sd_ACC_wrist_mag:sd_heart_rate_variability_wrist_BVP`",
+                           "S10", 
+                           "participantS2", "participantS3", "participantS4","participantS5", "participantS6",
+                           "participantS7","participantS8","participantS9","participantS11","participantS13",
+                           "participantS14","participantS15","participantS16","participantS17",
+                           "$\\sigma^W_{ACC}$ * S10",
+                           "`sd_ACC_wrist_mag:participantS2`", "`sd_ACC_wrist_mag:participantS3`",
+                           "`sd_ACC_wrist_mag:participantS4`","`sd_ACC_wrist_mag:participantS5`",
+                           "`sd_ACC_wrist_mag:participantS6`","`sd_ACC_wrist_mag:participantS7`",
+                           "`sd_ACC_wrist_mag:participantS8`","`sd_ACC_wrist_mag:participantS9`",
+                           "`sd_ACC_wrist_mag:participantS11`","`sd_ACC_wrist_mag:participantS13`",
+                           "`sd_ACC_wrist_mag:participantS14`","`sd_ACC_wrist_mag:participantS15`",
+                           "`sd_ACC_wrist_mag:participantS16`","`sd_ACC_wrist_mag:participantS17`"
+                           
+)
+
+lr_model_final_wrist_chest_coef_tidy_df <- lr_model_final_wrist_chest$finalModel %>% 
+  tidy() %>%
+  dplyr::select(-statistic) %>% 
+  bind_rows(tibble(term = c("S10", "$rms^W_{HRV}$ * S10", "$\\sigma^C_{HR}$ * S10"), 
+                   estimate = c(0,0,0), `std.error` = c(0,0,0), `p.value`= c(0,0,0))) 
+reordered_terms_wrist_chest <- c("(Intercept)", "sd_EDA" , "sd_EDA_wrist", "sd_Temp_chest" , 
+                                 "min_Temp_wrist" , "min_EMG" , "sd_inhale" , "sd_exhale" , "max_breath" , "i_e_ratio" , "mean_ACC_chest_mag" ,
+                                 "sd_ACC_chest_mag" , "sd_ACC_wrist_mag" , 
+                                 "sd_heart_rate_wrist_BVP" , "sd_heart_rate_variability_wrist_BVP" , "rms_heart_rate_variability_wrist_BVP",
+                                 "sd_heart_rate_chest_ECG" , "rms_heart_rate_variability_chest_ECG",
+                                 "`sd_EDA_wrist:min_Temp_wrist`",
+                                 "S10", 
+                                 "participantS2", "participantS3", "participantS4","participantS5", "participantS6",
+                                 "participantS7","participantS8","participantS9","participantS11","participantS13",
+                                 "participantS14","participantS15","participantS16","participantS17",
+                                 "$rms^W_{HRV}$ * S10", 
+                                 "`rms_heart_rate_variability_wrist_BVP:participantS2`", "`rms_heart_rate_variability_wrist_BVP:participantS3`",
+                                 "`rms_heart_rate_variability_wrist_BVP:participantS4`","`rms_heart_rate_variability_wrist_BVP:participantS5`",
+                                 "`rms_heart_rate_variability_wrist_BVP:participantS6`",
+                                 "`rms_heart_rate_variability_wrist_BVP:participantS7`","`rms_heart_rate_variability_wrist_BVP:participantS8`",
+                                 "`rms_heart_rate_variability_wrist_BVP:participantS9`","`rms_heart_rate_variability_wrist_BVP:participantS11`",
+                                 "`rms_heart_rate_variability_wrist_BVP:participantS13`",
+                                 "`rms_heart_rate_variability_wrist_BVP:participantS14`","`rms_heart_rate_variability_wrist_BVP:participantS15`",
+                                 "`rms_heart_rate_variability_wrist_BVP:participantS16`","`rms_heart_rate_variability_wrist_BVP:participantS17`",
+                                 "$\\sigma^C_{HR}$ * S10",
+                                 "`sd_heart_rate_chest_ECG:participantS2`", "`sd_heart_rate_chest_ECG:participantS3`",
+                                 "`sd_heart_rate_chest_ECG:participantS4`","`sd_heart_rate_chest_ECG:participantS5`",
+                                 "`sd_heart_rate_chest_ECG:participantS6`",
+                                 "`sd_heart_rate_chest_ECG:participantS7`","`sd_heart_rate_chest_ECG:participantS8`",
+                                 "`sd_heart_rate_chest_ECG:participantS9`","`sd_heart_rate_chest_ECG:participantS11`",
+                                 "`sd_heart_rate_chest_ECG:participantS13`",
+                                 "`sd_heart_rate_chest_ECG:participantS14`","`sd_heart_rate_chest_ECG:participantS15`",
+                                 "`sd_heart_rate_chest_ECG:participantS16`","`sd_heart_rate_chest_ECG:participantS17`"
+)
+
+labels = c("S2", "S3", "S4", "S5", "S6", "S7", "S8", "S9", "S11", "S13", "S14", "S15", "S16", "S17")
+
+wrist_het_data <- lr_model_final_wrist_coef_tidy_df %>%
+  filter(str_detect(term, "S") == TRUE) %>%
+  mutate(lower = as.numeric(estimate) - 1.96*as.numeric(std.error),
+         upper = as.numeric(estimate) + 1.96*as.numeric(std.error))
+wrist_est <- wrist_het_data[1:14,]
+wrist_est$label = labels
+wrist_int <- wrist_het_data[15:28,]
+wrist_int$label = labels
+
+chest_wrist_het_data <-  lr_model_final_wrist_chest_coef_tidy_df %>%
+  filter(str_detect(term, "S") == TRUE) %>%
+  mutate(lower = as.numeric(estimate) - 1.96*as.numeric(std.error),
+         upper = as.numeric(estimate) + 1.96*as.numeric(std.error))
+chest_wrist_est <- chest_wrist_het_data[1:14,]
+chest_wrist_est$label = labels
+chest_wrist_rms_HRV <- chest_wrist_het_data[15:28,]
+chest_wrist_rms_HRV$label = labels
+chest_wrist_sd_HR <- chest_wrist_het_data[29:42,]
+chest_wrist_sd_HR$label = labels
 
 
-In the wrist only model, when compared to the baseline S10 and holding all else constant, we expect the odds of being  stressed for S17 to multiply by $e^{0.256}$, or 1.29, while we expect the odds of being stressed for S7 to multiply by $e^{-5.765}$, or 0.003, and the odds of being stressed for S3 to multiply by $e^{-4.34}$, or 0.013.
+ggplot(data=wrist_est,aes(x=label,y=estimate)) +
+  geom_point() + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.1) + 
+  labs(title="95% Participant CIs for the log-odds of Stress",
+       subtitle = "Wrist Only Model") +
+  coord_flip()
 
-For the standard deviation of the magnitude of wrist ACC, when compared to the baseline S10 and holding all else constant,  as the standard deviation of the magnitude of wrist ACC increases by one, we expect the odds of being stressed for S7 to multiply by $e^{10.803}$, or 49168.08 more and the odds of being stressed for S5 to multiply by $e^{6.297}$, or 542.9 more. The values for the wrist only model  are detailed in Table 5. 
+ggplot(data=wrist_int,aes(x=label,y=estimate)) +
+  geom_point() + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.1) + 
+  labs(title="95% Participant-sd ACC interaction CIs for the log-odds of Stress",
+       subtitle = "Wrist Only Model") +
+  coord_flip()
 
-In the all data model, when compared to the baseline S10 and holding all else constant, we expect the odds of being stressed for S8 to multiply by $e^{0.413}$, or 1.51, and the odds of being stressed for S15 to multiply by $e^{0.178}$, or 1.19, while we  expect the odds of being stressed for the other 12 subjects to multiply by a value less than 1. 
+ggplot(data=chest_wrist_est,aes(x=label,y=estimate)) +
+  geom_point() + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.1) + 
+  labs(title="95% Participant CIs for the log-odds of Stress",
+       subtitle = "Chest and Wrist Model") +
+  coord_flip()
 
-For the standard deviation of wrist HR, when compared to the baseline S10 and holding all else constant, as the standard deviation of wrist HR increases by one, we expect the odds of being stressed for S11 to multiply by $e^{13.179}$, or 529135.6 more and the odds of being  stressed for S17 to multiply by $e^{8.979}$, or 7934.7 more; conversely, as the standard deviation of wrist HR increases by one, we expect the odds of being stressed for S8 to multiply by $e^{-4.834}$, or 0.008. The values for the wrist only model are detailed in Table 8. 
+ggplot(data=chest_wrist_rms_HRV,aes(x=label,y=estimate)) +
+  geom_point() + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.1) + 
+  labs(title="95% Participant-rms HRV interaction CIs for the log-odds of Stress",
+       subtitle = "Chest and Wrist Model") +
+  coord_flip()
+
+ggplot(data=chest_wrist_sd_HR,aes(x=label,y=estimate)) +
+  geom_point() + 
+  geom_errorbar(aes(ymin = lower, ymax = upper), width = 0.1) + 
+  labs(title="95% Participant-sd HR interaction CIs for the log-odds of Stress",
+       subtitle = "Chest and Wrist Model") +
+  coord_flip()
+
+```
+
+
+Please see Figure XXX for a graphical view of the Confidence Intervals for participant and participant interaction effects relative to our baseline of Subject 10. These estimates are graphed in terms of the log-odds for scaling reasons, however, you can see all of these intervals in terms of odds in Tables 7 and 8 in the Appendix.  
+
+For the wrist only model, we see that Subjects 2, 3, 4, 6, 8, 11, 15, 16, and 17 are all less likely to be stressed if physiological measures are at the mean for the dataset than Subject 10. However, all of these intervals overlap except for those of Subjects 6 and 13, indicating that the other subjects don't differ significantly from each other. Additionally, Subject 14's log-odds of being stressed do not differ from Subject 10, and Subjects 5, 7, and 9 all appear to have greater odds of being stressed than Participant 10, and these three people differ significantly from each other. 
+
+The interaction effect between participant and standard deviation of ACC appears to be significantly higher for Subjects 5 and 7 compared to the baseline of Subject 10. Subjects 9 and 14's high positive estimates also indicate that as standard deviation of ACC increases, their log-odds of being stressed increase at a greater rate than we see for the baseline Subject 10, however these estimates appear not to be significant. For the remaining subjects (2, 3, 4, 6, 8, 11, 13, 15, 16, and 17), their log-odds of being stressed decrease at a greater rate as standard deviation of ACC increases compared to Subject 10, however their confidence intervals all overlap, so they don't appear to differ significantly from each other. 
+
+In the chest and wrist model, Subjects 17 and 9 have significantly greater log-odds of being stressed compared to Subject 10 when all other variables are at their mean. Subjects 2, 14, and 15 do not differ significantly from Subject 10. Subjects 3, 4, 5, 6, 7, 8, 11, 13, and 16 all have significantly lower log-odds of being stressed compared to Subject 10, but they don't all differ significantly from each other. Subjects 6 and 13 have the lowest log-odds, followed by Subjects 7 and 11, Subjects 3, 4, and 5, and finally subjects 8 and 16.
+
+For the interaction effect between participant and rms wrist HRV, as rms HRV increases, Subject 11's log-odds of being stressed increase more compared to the baseline Subject 10, and Subject 3's log-odds also significantly increase more, although not by as much as Subject 11. Subjects 4 and 16 do not appear to have a significant difference in the impact on stress as rms HRV increases compared to Subject 10. We expect Subjects 2, 5, 6, 8, 9, and 14 all to have a decrease in log-odds of being stressed as rms HRV increases compared to Subject 10, however these subjects do not seem to vary significantly between each other. Lastly, Subjects 7, 13, 15, and 17 all see an even greater decrease in log-odds of being stressed as rms HRV increases compared 2, 5, 6, 8, 9, and 14, but again, and Subject 7 varies significantly from Subjects 15 and 17, but not 13.
+
+Lastly, for the interaction effect between participant and standard deviation of chest HR, Subject 8 is the only subject whose log-odds of being stressed decrease as sd HR increases, relative to Subject 10. Subjects 2 and 5 do not have significantly differing effects of sd chest HR on the log-odds of being stressed compared to Subject 10. The remaining Subjects (9, 7, 6, 4, 3, 17, 16, 15, 14, 13, and 11) all have increasing log-odds of being stressed as sd HR increases compared to Subject 10, however not all of them significantly differ from each other. Subject 11 is significantly higher than all of the other subjects, and Subject 17 significantly differs from Subjects 3, 7, 9, 14, 15, and 16. 
 
 Although some variation between subjects is expected, within both models, we see large variability among the odds of being stressed. These results indicate that there is heterogeneity across individuals’ responses to stress vs. amusement. Overall, although we only see the differences between S10 vs. other subjects (but not S2 vs. S3 for example), the disparity in the odds of being stressed across the 15 participants is pretty apparent. This could also be due to model instability or a small number of participants - a larger pool of participants could reduce heterogeneity and variability between the estimates. 
 
@@ -1156,17 +1279,4 @@ colnames(read_csv("d"))[str_detect(pattern="SSSQ", string = colnames(read_csv("d
 ```
 
 
-```{r calculate-CIs}
-wrist_het_data <- lr_model_final_wrist_coef_tidy_df %>%
-  mutate(lower = as.numeric(estimate) - 1.96*as.numeric(std.error),
-         upper = as.numeric(estimate) + 1.96*as.numeric(std.error))
 
-chest_wrist_het_data <-  lr_model_final_wrist_chest_coef_tidy_df %>%
-  mutate(lower = as.numeric(estimate) - 1.96*as.numeric(std.error),
-         upper = as.numeric(estimate) + 1.96*as.numeric(std.error))
-
-ggplot(wrist_het_data) + geom_errorbar(x = term, estimate = estimate, ymin = lower, ymax = upper, data = wrist_het_data)
-
-library(plotrix)
-plotCI(x=wrist_het_data$term,li=wrist_het_data$lower,ui=wrist_het_data$upper, lwd=3,ylim=c(2,4))
-```
