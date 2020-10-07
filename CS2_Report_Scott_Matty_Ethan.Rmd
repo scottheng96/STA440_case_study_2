@@ -175,9 +175,9 @@ calc_metrics = function(model, testing_data, folds) {
 
 # Introduction 
 
-Affect recognition seeks to detect a person’s affective state. One of these states is stress, and long-term stress is known to have severe implications on human health and well-being. This study uses the Wearable Stress and Affect Detection (WESAD) dataset, which was introduced in Schmidt et al. [[1]][Bibliography], and achieves classification accuracies of 86.2% on wrist data and 90.8% on all data for the binary classification problem (stress vs. amusement). In conducting this analysis, we aim to determine whether sensor data are useful in predicting stress, and if so, which predictors are most significant when discriminating between stress and amusement. Furthermore, we seek to understand which types of sensor data are most useful in predicting stress, alone or in combination, and to determine if stress can be detected only using the wrist-worn wearable, which is more convenient to wear than a chest-worn device. Finally, we quantify the heterogeneity across individuals in their responses to stress.
+Affect recognition seeks to detect a person’s affective state. One of these states is stress, and long-term stress is known to have severe implications on human health and well-being [[1]][Bibliography]. With the rapid developments in wearable health technology, tracking various body metrics can allow to determine one's affective state. This study uses the Wearable Stress and Affect Detection (WESAD) dataset that contains both wrist and chest collected data, which was introduced in Schmidt et al. [[2]][Bibliography], and achieves classification accuracies of 86.2% on wrist data and 90.8% on all data (both chest and wrist) for the binary classification problem (stress vs. amusement). In conducting this analysis, we aim to determine whether sensor data are useful in predicting stress, and if so, which predictors are most significant when discriminating between stress and amusement. Furthermore, we seek to understand which types of sensor data are most useful in predicting stress, alone or in combination, and to determine if stress can be detected only using the wrist-worn wearable, which is more convenient to wear than a chest-worn device. Finally, we quantify the heterogeneity across individuals in their responses to stress.
 
-Section 2 focuses on providing descriptions of the WESAD data, how the raw data was processed and the engineering of various features. Exploratory data analysis plots are included to provide initial insights to our study based on the data. In section 3, we provide an extensive literature review on previous research, put our research in context of them. Section 4 describes our data and domain-driven approaches to feature engineering, model selection and type of evaluation metrics based on the nature of our study and the dataset. Section 5 discusses the results of our models, predictive accuracies of models being trained only on wrist data and on wrist and chest data combined, along with multiple diagnostic techniques to address model assumptions and check model fit. Section 6 consists of interpretations from the study’s models and addressing issues on heterogeneity, collinearity and the predictive significance of various features.
+Section 2 focuses on providing descriptions of the WESAD data, how the raw data was processed and the engineering of various features. Exploratory data analysis plots are included to provide initial insights to our study based on the data. In section 3, we provide an extensive literature review on previous research and discuss how this paper builds on the work from those studies. Section 4 describes our data and domain-driven approaches to feature engineering, model selection and type of evaluation metrics based on the nature of our study and the dataset. Section 5 discusses the results of our models and compares the predictive accuracy of wrist only data models and wrist and chest data models, along with multiple diagnostic techniques to address model assumptions and check model fit. Section 6 consists of interpretations from the study’s models and addressing issues on heterogeneity, collinearity and the predictive significance of various features.
 
 # Data 
 
@@ -244,7 +244,7 @@ panel.cor <- function(x, y, ...)
 }
 ```
 
-The WESAD dataset contains 63 million samples of raw physiological and motion signal data collected from 15 test subjects [[1]][Bibliography]. There were originally 17 participants in the study, but data for two subjects had to be thrown out. The data was collected using 2 devices: a chest-worn device (RespiBAN) and a wrist-worn device (Empatica E4). The RespiBAN chest data includes electrocardiography (ECG) data in mV, electrodermal activity (EDA) in microseconds, electromyography (EMG) data in mV, skin temperature (TEMP) in °C, displacement of the thorax for males and the abdomen for females induced by inhaling or exhaling (RESP) as a percentage, and 3-axis accelerometer (ACC) data in g - the acceleration of gravity. All RespiBAN data were recorded at 700 Hz. The E4 wrist data collected includes blood volume pulse (BVP) data (64Hz), ACC data in units of 1/64g (32Hz), EDA in microseconds (4Hz), and TEMP in °C (4Hz). Each sample also references a label corresponding to the study protocol condition, with each label referring to a different condition (1-baseline, 2-stress, 3-amusement, 4-meditation). These conditions were recorded by having participants exposed to sources of stimulation that would elicit the desired condition. The labels 0, 5, 6, 7  indicate that the data should be ignored. The dataset also included information about each subject, such as height, weight and age, as well as personal responses to PANAS and SSSQ questionnaires.
+The WESAD dataset [[2]][Bibliography] contains 63 million samples of raw physiological and motion signal data collected from 15 test subjects (12 male, 3 female) with ages between 24-35. The data was collected using 2 devices: a chest-worn device (RespiBAN) and a wrist-worn device (Empatica E4). The RespiBAN chest data includes electrocardiography (ECG) data in mV, electrodermal activity (EDA) in microseconds, electromyography (EMG) data in mV, skin temperature (TEMP) in °C, displacement of the thorax for males and the abdomen for females induced by inhaling or exhaling (RESP) as a percentage, and 3-axis accelerometer (ACC) data in g - the acceleration of gravity. All RespiBAN data were recorded at 700 Hz. The E4 wrist data collected includes blood volume pulse (BVP) data (64Hz), ACC data in units of 1/64g (32Hz), EDA in microseconds (4Hz), and TEMP in °C (4Hz). Each sample also references a label corresponding to the study protocol condition, with each label referring to a different condition (1-baseline, 2-stress, 3-amusement, 4-meditation). These conditions were recorded by having participants exposed to sources of stimulation that would elicit the desired condition. The labels 0, 5, 6, 7  indicate that the data should be ignored. The dataset also included information about each subject, such as height, weight and age, as well as personal responses to PANAS and SSSQ questionnaires.
 
 Considering the nature of the WESAD dataset and the scope of our study, we decided to filter out samples that did not represent stress or amusement, and standardized sampling rates for all RespiBAN and E4 variables to 4Hz. We did this by downsampling data collected at a more frequent rate, and we chose to use the recorded signals from these time periods instead of a mean since we planned on calculating mean windows of our data later. This downsampling allowed for more feasible computation with a dataset of reasonable size and standardized windows for multiple variables. Even though we lost some information by downsampling, we thought this was a good trade-off so we could test more models with a smaller dataset.
 
@@ -361,9 +361,9 @@ We used accuracy, $F_1$-score, and AUC as evaluation metrics. Accuracy is the nu
 # Results 
 
 ```{r logistic-regression-wrist}
-lr_model_final_wrist <- train(label ~  sd_EDA_wrist + sd_ACC_wrist_mag + #sd_heart_rate_variability_wrist_BVP + 
-                                #sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + 
-                                #sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP + 
+lr_model_final_wrist <- train(label ~  sd_EDA_wrist + sd_ACC_wrist_mag + sd_heart_rate_variability_wrist_BVP + 
+                                sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + 
+                                sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP + 
                                 participant + participant:sd_ACC_wrist_mag,
                               data = train, trControl = train_control, 
                               method = "glm",
@@ -520,6 +520,52 @@ bind_rows(final_wrist_lr_model_df_1Hz, final_wrist_chest_lr_model_df_1Hz) %>%
 ```
 
 
+```{r}
+final_data_60_window <- readRDS("final_data_240s_window.Rds") %>% 
+  filter(label != 1) %>% 
+  mutate(label = case_when(
+    label ==  2 ~ 1,
+    label == 3 ~ 0
+  )) %>% 
+  mutate(label = as.factor(label)) %>% 
+  mutate(participant = fct_relevel(participant,  c('S10', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S11', 'S13', 'S14', 'S15', 'S16', 'S17'))) %>% 
+  mutate_if(is.numeric, scale)
+set.seed(20200922)
+idx = createDataPartition(final_data_60_window$label, p = 0.8, list = FALSE)
+train_60window = final_data_60_window[idx, ]
+test_60window = final_data_60_window[-idx, ]
+train_control <- trainControl(method="repeatedcv", number = 5, savePredictions = T) # this is the cross validation
+
+lr_model_final_wrist_60window <- train(label ~ sd_EDA_wrist + 
+                                         sd_ACC_wrist_mag + sd_heart_rate_variability_wrist_BVP + 
+                              sd_EDA_wrist*sd_ACC_wrist_mag + sd_EDA_wrist*sd_heart_rate_variability_wrist_BVP + 
+                                sd_ACC_wrist_mag*sd_heart_rate_variability_wrist_BVP + 
+                                participant #+ participant:sd_heart_rate_variability_wrist_BVP
+                             ,
+                                  data = train_60window, trControl = train_control, 
+                                  method = "glm",
+                                  family ="binomial") 
+lr_model_final_wrist_chest_60window <- train(label ~ participant + #sd_EDA +# sd_EDA_wrist + 
+                                               sd_Temp_chest + 
+                                          min_Temp_wrist + min_EMG + sd_inhale + sd_exhale + max_breath + 
+                                          i_e_ratio + mean_ACC_chest_mag + sd_ACC_chest_mag + sd_ACC_wrist_mag + 
+                                         sd_heart_rate_wrist_BVP + sd_heart_rate_variability_wrist_BVP + 
+                                           rms_heart_rate_variability_wrist_BVP + 
+                                          sd_heart_rate_chest_ECG + rms_heart_rate_variability_chest_ECG #+ 
+                                        # + rms_heart_rate_variability_wrist_BVP*participant + 
+                                       +  sd_heart_rate_chest_ECG*participant  
+                                         + sd_Temp_chest * min_Temp_wrist
+                                         , # try different interactions 
+                                        data = train_60window, trControl = train_control, 
+                                        method = "glm",
+                                        family ="binomial")
+
+calc_metrics(lr_model_final_wrist_60window, test_60window, 5)
+summary(lr_model_final_wrist_60window$finalModel)
+calc_metrics(lr_model_final_wrist_chest_60window, test_60window, 5)
+summary(lr_model_final_wrist_chest_60window$finalModel)
+```
+
 
 ```{r eval=FALSE}
 # drop in deviance test
@@ -626,7 +672,7 @@ Although some variation between subjects is expected, within both models, we see
 
 # Conclusion 
 
-While we were able to distinguish between stress and amusement conditions fairly well with our model, it is worth pointing out some limitations. First, we only had data for the 15 participants in this study, and participant ID is an important predictor in our models, so we are unable to generalize the likelihood of being stressed or amused to the general population. Also, since all of the data was collected in one sitting during an experiment, our data is very highly correlated and  suggests there is heterogeneity across individuals’ responses to stress vs. amusement. We can distinguish between stress and amusement in this controlled laboratory setting, but we are unable to generalize the differences in these emotions in a person's day-to-day life, or what stress and amusement might even look like if the measurements were taken on a different day.
+While we were able to distinguish between stress and amusement conditions fairly well with our model, it is worth pointing out some limitations. First, we only had data for the 15 participants that have similar ages and are mostly male. As participant ID is an important predictor in our models, we are unable to generalize the likelihood of being stressed or amused to other age groups or identified genders. Also, since all of the data was collected in one sitting during an experiment, our data is very highly correlated and  suggests there is heterogeneity across individuals’ responses to stress vs. amusement. We can distinguish between stress and amusement in this controlled laboratory setting, but we are unable to generalize the differences in these emotions in a person's day-to-day life, or what stress and amusement might even look like if the measurements were taken on a different day.
 
 Since it appears that the wrist wearable is sufficient for detecting stress versus amusement in the laboratory setting, further research could study wrist data for individuals over a long time period, perhaps a day or even a week, and see if different emotions are still distinguishable. Also, studies could be done with a larger random sample of individuals to try and see if there are any findings about stressed versus amused physiological responses generalizable to all individuals instead of just at the participant level. 
 
@@ -634,9 +680,9 @@ Since it appears that the wrist wearable is sufficient for detecting stress vers
 
 ## Bibliography
 
-1. P. Schmidt et al. (2018). Introducing WESAD, a Multimodal Dataset for Wearable Stress and Affect Detection. Proceedings of the 2018 on International Conference on Multimodal Interaction - ICMI 18.
+1. D. Watson, L. A. Clark and A. Tellegen. (1988). Development and validation of brief measures of positive and negative affect: the PANAS scales. Journal of Personality and Social Psychology, 54, 6, 1063.
 
-2. D. Watson, L. A. Clark and A. Tellegen. (1988). Development and validation of brief measures of positive and negative affect: the PANAS scales. Journal of Personality and Social Psychology, 54, 6, 1063.
+2. P. Schmidt et al. (2018). Introducing WESAD, a Multimodal Dataset for Wearable Stress and Affect Detection. Proceedings of the 2018 on International Conference on Multimodal Interaction - ICMI 18.
 
 3. H. Yaribeygi et al. (2017). The impact of stress on body function: A review. EXCLI Journal, 2017, 16, pp. 1057–1072.
 
