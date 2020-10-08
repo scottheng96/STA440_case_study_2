@@ -2,7 +2,7 @@
 title: "Detecting Stress Using Wearables"
 author: "Matty Pahren, Scott Heng On, Ethan Shen"
 fontsize: 11pt
-geometry: "left=1.3cm,right=1.3cm,top=1.2cm,bottom=1.2cm"
+geometry: "left=1.25cm,right=1.25cm,top=1.15cm,bottom=1.15cm"
 indent: true
 header-includes:
     - \usepackage{indentfirst}
@@ -256,7 +256,7 @@ The WESAD dataset [[2]][Bibliography] contains 63 million samples of raw physiol
 
 Figure 1.1 and 1.2 show plots of the EDA signal data by participant and by condition showing different values when the participant experienced different conditions, and this difference is captured both in the chest and wrist data. There is perfect separation between conditions because the signals are plotted against time and in the study participants were periodically told to do or experience tasks to invoke a condition of stress or amusement. Since we only took samples for 2 conditions, we could desirably observe a relative equal distribution of samples in both groups. However, raw signal data only provides limited information and difficult interpretability, and therefore from these raw data signals, we performed data and domain-driven feature engineering to generate potential predictor variables for our model that were easily interpretable and well represented the information in the data. We generated a total of 50 features across  all the raw signal variables.
 
-```{r fig.width = 13,fig.height = 3.75}
+```{r fig.width = 13,fig.height = 3.5}
 gridExtra::grid.arrange(chest_EDA, wrist_EDA, ncol=2)
 ```
 
@@ -427,7 +427,7 @@ pcm1 <- plot_confusion_matrix(table1,
                               predictions_col = "prediction",
                               counts_col = "n") + 
   ggplot2::labs(subtitle = "Wrist Data (Model 1)") + 
-  ggplot2::theme(plot.subtitle = element_text(hjust = 0.5))
+  ggplot2::theme(plot.subtitle = element_text(hjust = 0.5, size = 10))
 table2 <- tidy(table(tibble("target" = test$label,
                             "prediction" = predict(lr_model_final_wrist_chest, test))))
 pcm2 <- plot_confusion_matrix(table2,   
@@ -438,14 +438,14 @@ pcm2 <- plot_confusion_matrix(table2,
                               predictions_col = "prediction",
                               counts_col = "n") + 
   ggplot2::labs(subtitle = "Chest & Wrist Data (Model 2)") + 
-  ggplot2::theme(plot.subtitle = element_text(hjust = 0.5))
+  ggplot2::theme(plot.subtitle = element_text(hjust = 0.5, size = 10))
 gridExtra::grid.arrange(pcm1, pcm2, ncol=2, 
                         bottom = textGrob("Figure 3: Confusion Matrices on Model Predictive Accuracy for model trained on only  \n Wrist Data and Wrist and Chest data combined", gp = gpar(fontsize = 6)))
 ```
 
 From the metrics displayed in Table 2 and the confusion matrices in Figure 3, it seems that both the wrist model and chest & wrist models have relatively high classification accuracies when detecting stress vs. amusement. 
 
-It is also worth discussing independence when evaluating our logistic regression model.  Adding $participant$ addresses independence at the subject level, but each individual sample is not independent; presumably, a person's heart rate from one second ago affects their current heart rate. In addition, we display variance inflation factor (VIF) values for both our models in the Appendix in Tables 9-11. VIF quantifies the severity of multicollinearity in a logistic regression model, and a smaller VIF value indicates less multicollinearity. In general, most VIF values are below 10; however, $participant$ and predictors that are used in interaction effects may have higher VIF values. However, since the standard errors of our estimates and interaction effects are relatively small, the larger VIF values are acceptable. 
+It is also worth discussing independence when evaluating our logistic regression model.  Adding $participant$ addresses independence at the subject level, but each individual sample is not independent; presumably, a person's heart rate from one second ago affects their current heart rate. In addition, we display variance inflation factor (VIF) values for both our models in the Appendix in Tables 9-11. VIF quantifies the severity of multicollinearity in a logistic regression model, and a smaller VIF value indicates less multicollinearity. Most VIF values are below 10; however, $participant$ and interaction effects have higher VIF values. However, since the standard errors of our estimates and interaction effects are relatively small, the larger VIF values are acceptable. 
 
 ### Sensitivity Analysis 
 
@@ -491,7 +491,6 @@ final_wrist_lr_model_df_1Hz <- calc_metrics(lr_model_final_wrist_1Hz, test_1Hz, 
 final_wrist_chest_lr_model_df_1Hz <- calc_metrics(lr_model_final_wrist_chest_1Hz, test_1Hz, 5) %>% 
   mutate(model = "Chest & Wrist (Model 4)")
 ```
-
 
 ```{r eval=FALSE}
 bind_rows(final_wrist_lr_model_df_1Hz, final_wrist_chest_lr_model_df_1Hz) %>% 
@@ -585,12 +584,12 @@ bind_rows(#final_wrist_lr_model_df_1Hz,
   add_header_above(c(" " = 1, "Cross Validation Data" = 3, "Test Data" = 3), escape = F)
 ```
 
-Table 3 displays the results of the wrist data and all data models (Models 3 and 4), with the same predictors as Models 1 and 2, when using data that was sampled using a 60 second window size and a 0.25 second window shift (as compared to a 5 second window size and 0.25 second window shift). In general, this set of models performed better in terms of evaluation metrics. Similarly, we compare the estimates from this set of models to the estimates from our original models; these estimates are displayed in Tables 7 and 8 in the Appendix. Our wrist-only model appears to be reasonably robust, as most estimates using data sampled using a 60 second window size and a 0.25 second window shift were similar to the estimates from Model 1. However, the combined data model was less robust, as there are estimates, such as the one for the standard deviations of chest EDA that were quite different (1.12 vs. 2.36 for Model 2 vs. Model 4). This disparity could be due to the loss of data when sampling using a 60 second window, the choice to initially downsample our data to 4Hz or other external factors that these features could not capture in these models.
+Table 3 displays the results of the wrist data and all data models (Models 3 and 4), with the same predictors as Models 1 and 2, when using data that was sampled using a 60 second window size and a 0.25 second window shift (as compared to a 5 second window size and 0.25 second window shift). In general, this set of models performed better in terms of evaluation metrics. Similarly, we compare the estimates from this set of models to the estimates from our original models; these estimates are displayed in Tables 7 and 8 in the Appendix. Our wrist-only model appears to be reasonably robust, as most estimates using data sampled using a 60 second window size and a 0.25 second window shift were similar to the estimates from Model 1. However, the combined data model was less robust, as there are estimates, such as the one for the standard deviations of chest EDA that were quite different (1.12 vs. 2.36 for Model 2 vs. Model 4). This disparity could be due to the loss of data when sampling using a 60 second window, perfect separation of certain predictors or other external factors that these features could not capture in these models.
 
 ### Comparison to Other Models
 
 In addition to our logistic regressions, we also ran a random forest model on the data. In our wrist-only random forest model, we found that min wrist EDA, max wrist EDA, range of wrist EDA and standard deviation of Z wrist ACC were the only significant predictors. While we don't see these exact predictors in our logistic regression, we had standard deviation of wrist EDA and standard deviation of wrist ACC in our final model, and these variables are highly correlated with the ones in our random forest model. 
-For the model built with chest and wrist data, we saw that max wrist EDA and standard deviation of chest ACC were the only two important predictors outside of participant. Standard deviation of chest ACC also occurs in our logistic regression, however instead of max wrist EDA, we see standard deviation of wrist EDA. Again, these two variables are highly correlated, so that seems to make sense. Further discussion of our random forests models can be found in the appendix. 
+For the model built with chest and wrist data, we saw that max wrist EDA and standard deviation of chest ACC were the only two important predictors outside of participant. Standard deviation of chest ACC also occurs in our logistic regression, however instead of max wrist EDA, we see standard deviation of wrist EDA. Again, these two variables are highly correlated, so that seems to make sense. Further discussion of our random forests models can be found in the Appendix. 
 
 # Discussion
 
