@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.14159265-2.6-0.99999 (TeX Live 2018) (preloaded format=xelatex 2018.4.16)  8 OCT 2020 12:44
+This is XeTeX, Version 3.14159265-2.6-0.99999 (TeX Live 2018) (preloaded format=xelatex 2018.4.16)  9 OCT 2020 09:07
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -977,15 +977,15 @@ LaTeX Info: Redefining \nameref on input line 80.
 * layout: <same size as paper>
 * layoutoffset:(h,v)=(0.0pt,0.0pt)
 * modes: 
-* h-part:(L,W,R)=(36.98866pt, 540.31767pt, 36.98866pt)
-* v-part:(T,H,B)=(34.14322pt, 726.68355pt, 34.14322pt)
+* h-part:(L,W,R)=(35.56593pt, 543.16313pt, 35.56593pt)
+* v-part:(T,H,B)=(32.72049pt, 729.529pt, 32.72049pt)
 * \paperwidth=614.295pt
 * \paperheight=794.96999pt
-* \textwidth=540.31767pt
-* \textheight=726.68355pt
-* \oddsidemargin=-35.28133pt
-* \evensidemargin=-35.28133pt
-* \topmargin=-75.12677pt
+* \textwidth=543.16313pt
+* \textheight=729.529pt
+* \oddsidemargin=-36.70406pt
+* \evensidemargin=-36.70406pt
+* \topmargin=-76.5495pt
 * \headheight=12.0pt
 * \headsep=25.0pt
 * \topskip=11.0pt
@@ -1049,18 +1049,18 @@ File: CS2_Report_Scott_Matty_Ethan_files/figure-latex/unnamed-chunk-4-1.pdf Gra
 phic file (type pdf)
 <use CS2_Report_Scott_Matty_Ethan_files/figure-latex/unnamed-chunk-4-1.pdf>
 
-Overfull \hbox (17.0041pt too wide) in paragraph at lines 188--189
+Overfull \hbox (17.00319pt too wide) in paragraph at lines 191--192
 [][] 
  []
 
 [2]
 LaTeX Font Info:    External font `lmex10' loaded for size
-(Font)              <10.95> on input line 247.
+(Font)              <10.95> on input line 250.
 File: CS2_Report_Scott_Matty_Ethan_files/figure-latex/unnamed-chunk-5-1.pdf Gra
 phic file (type pdf)
 <use CS2_Report_Scott_Matty_Ethan_files/figure-latex/unnamed-chunk-5-1.pdf>
 
-Overfull \hbox (17.03275pt too wide) in paragraph at lines 251--252
+Overfull \hbox (17.03165pt too wide) in paragraph at lines 254--255
 [][] 
  []
 
@@ -1093,17 +1093,17 @@ File: CS2_Report_Scott_Matty_Ethan_files/figure-latex/calculate-CIs-5.pdf Graph
 ic file (type pdf)
 <use CS2_Report_Scott_Matty_Ethan_files/figure-latex/calculate-CIs-5.pdf>
 
-LaTeX Warning: Float too large for page by 31.10876pt on input line 909.
+LaTeX Warning: Float too large for page by 28.2633pt on input line 907.
 
 
-LaTeX Warning: Float too large for page by 5.2005pt on input line 1264.
+LaTeX Warning: Float too large for page by 2.35504pt on input line 1262.
 
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1294.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1292.
 [12] [13] [14] [15] [16] [17] [18] [19] [20] [21] [22]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 1294.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 1292.
 (./CS2_Report_Scott_Matty_Ethan.aux)
-Package atveryend Info: Empty hook `AtVeryEndDocument' on input line 1294.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1294.
+Package atveryend Info: Empty hook `AtVeryEndDocument' on input line 1292.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 1292.
 
 Package rerunfilecheck Info: File `CS2_Report_Scott_Matty_Ethan.out' has not ch
 anged.
@@ -1115,7 +1115,7 @@ LaTeX Warning: There were multiply-defined labels.
 Here is how much of TeX's memory you used:
  23376 strings out of 492970
  434433 string characters out of 6133938
- 683419 words of memory out of 5000000
+ 683417 words of memory out of 5000000
  27124 multiletter control sequences out of 15000+600000
  547075 words of font info for 53 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
