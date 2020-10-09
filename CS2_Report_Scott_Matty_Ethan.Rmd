@@ -596,8 +596,8 @@ For the model built with chest and wrist data, we saw that max wrist EDA and sta
 ## Interpretation of Wrist-Only Model
 
 When standard deviation of wrist EDA increases by 1, we expect the odds of being stressed versus amused to multiply by a factor of `r round(exp(3.826), 3)` (with 95% CI `r round(exp(3.6888), 3)`, `r round(exp(3.9632), 3)`), holding all else constant. 
-When standard deviation of wrist ACC increases by 1, we expect the odds of being stressed versus amused to multiply by a factor of `r round(exp(0.445), 3)` (`r round(exp(2.76076), 3)`, `r round(exp(4.59924), 3)`), holding all else constant. 
-When standard deviation of wrist HRV increases by 1, we expect the odds of being stressed versus amused to multiply by a factor of `r round(exp(4.027), 3)` (`r round(exp(0.3568), 3)`, `r round(exp(0.5332), 3)`), holding all else constant. 
+When standard deviation of wrist ACC increases by 1, we expect the odds of being stressed versus amused to multiply by a factor of `r round(exp(3.68), 3)` (`r round(exp(2.76076), 3)`, `r round(exp(4.59924), 3)`), holding all else constant. 
+When standard deviation of wrist HRV increases by 1, we expect the odds of being stressed versus amused to multiply by a factor of `r round(exp(0.445), 3)` (`r round(exp(0.3568), 3)`, `r round(exp(0.5332), 3)`), holding all else constant. 
 
 
 Holding standard deviation of wrist HRV constant, when standard deviation of wrist EDA and wrist ACC both increase by 1, we expect the odds of being stressed versus amused to multiply by an additional factor of `r round(exp(-1.129), 3)` (`r round(exp(-1.18976), 3)`,  `r round(exp(-1.06824), 3)`).
